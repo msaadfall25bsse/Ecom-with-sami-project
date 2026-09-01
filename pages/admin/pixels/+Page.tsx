@@ -275,32 +275,31 @@ export default function TrackingPixelsPage() {
       </div>
 
       {/* Pixels Data Table */}
-      <div style={{
-        backgroundColor: '#111827',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        overflow: 'hidden'
-      }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94A3B8', fontSize: '0.78rem', textTransform: 'uppercase', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-                <th style={{ padding: '14px 18px' }}>Platform Name</th>
-                <th style={{ padding: '14px 18px' }}>Pixel / Measurement ID</th>
-                <th style={{ padding: '14px 18px' }}>Placement</th>
-                <th style={{ padding: '14px 18px' }}>Status</th>
-                <th style={{ padding: '14px 18px' }}>Quick Toggle</th>
-                <th style={{ padding: '14px 18px', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} style={{ padding: '36px', textAlign: 'center', color: '#94A3B8' }}>
-                    Loading tracking pixels...
-                  </td>
+      <div className="admin-table-responsive">
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.86rem' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94A3B8', fontSize: '0.74rem', textTransform: 'uppercase', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+              <th style={{ padding: '12px 16px' }}>Platform Name</th>
+              <th style={{ padding: '12px 16px' }}>Pixel / Measurement ID</th>
+              <th style={{ padding: '12px 16px' }}>Placement</th>
+              <th style={{ padding: '12px 16px' }}>Status</th>
+              <th style={{ padding: '12px 16px' }}>Quick Toggle</th>
+              <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              [1, 2, 3].map(i => (
+                <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '120px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '150px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '90px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '70px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '50px', height: '24px' }} /></td>
+                  <td style={{ padding: '14px 16px', textAlign: 'right' }}><div className="admin-skeleton" style={{ width: '60px', height: '24px', marginLeft: 'auto' }} /></td>
                 </tr>
-              ) : pixels.length > 0 ? (
+              ))
+            ) : pixels.length > 0 ? (
                 pixels.map(p => {
                   const badge = getPlatformBadge(p.platform_name);
                   const isActive = p.is_active === 1;
@@ -458,7 +457,6 @@ export default function TrackingPixelsPage() {
             </tbody>
           </table>
         </div>
-      </div>
 
       {/* Add / Edit Modal Drawer */}
       {showModal && (

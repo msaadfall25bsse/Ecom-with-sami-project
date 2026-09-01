@@ -83,33 +83,32 @@ export default function InventoryPage() {
         </button>
       </div>
 
-      {/* Inventory Table (Page 6 of Stitch Design) */}
-      <div style={{
-        backgroundColor: '#111827',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        overflow: 'hidden'
-      }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94A3B8', fontSize: '0.78rem', textTransform: 'uppercase', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-                <th style={{ padding: '14px 18px' }}>Product Name</th>
-                <th style={{ padding: '14px 18px' }}>SKU</th>
-                <th style={{ padding: '14px 18px' }}>Category</th>
-                <th style={{ padding: '14px 18px' }}>Stock Level</th>
-                <th style={{ padding: '14px 18px' }}>Price</th>
-                <th style={{ padding: '14px 18px', textAlign: 'right' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} style={{ padding: '36px', textAlign: 'center', color: '#94A3B8' }}>
-                    Loading inventory...
-                  </td>
+      {/* Inventory Table */}
+      <div className="admin-table-responsive">
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.86rem' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94A3B8', fontSize: '0.74rem', textTransform: 'uppercase', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+              <th style={{ padding: '12px 16px' }}>Product Name</th>
+              <th style={{ padding: '12px 16px' }}>SKU</th>
+              <th style={{ padding: '12px 16px' }}>Category</th>
+              <th style={{ padding: '12px 16px' }}>Stock Level</th>
+              <th style={{ padding: '12px 16px' }}>Price</th>
+              <th style={{ padding: '12px 16px', textAlign: 'right' }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              [1, 2, 3].map(i => (
+                <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '140px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '90px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '100px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '70px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '90px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px', textAlign: 'right' }}><div className="admin-skeleton" style={{ width: '60px', height: '24px', marginLeft: 'auto' }} /></td>
                 </tr>
-              ) : products.length > 0 ? (
+              ))
+            ) : products.length > 0 ? (
                 products.map(p => (
                   <tr key={p.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#FFFFFF' }}>
                     <td style={{ padding: '14px 18px' }}>
@@ -154,7 +153,6 @@ export default function InventoryPage() {
             </tbody>
           </table>
         </div>
-      </div>
 
       {/* Add Product Modal */}
       {showAddModal && (

@@ -226,34 +226,34 @@ export default function StudentsDirectoryPage() {
       </div>
 
       {/* Students Table */}
-      <div style={{
-        backgroundColor: '#111827',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        overflow: 'hidden'
-      }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94A3B8', fontSize: '0.78rem', textTransform: 'uppercase', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-                <th style={{ padding: '14px 18px' }}>Student</th>
-                <th style={{ padding: '14px 18px' }}>Contact Info</th>
-                <th style={{ padding: '14px 18px' }}>Enrolled Course</th>
-                <th style={{ padding: '14px 18px' }}>Learning Progress</th>
-                <th style={{ padding: '14px 18px' }}>Security &amp; Status</th>
-                <th style={{ padding: '14px 18px' }}>Last Active</th>
-                <th style={{ padding: '14px 18px', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={7} style={{ padding: '36px', textAlign: 'center', color: '#94A3B8' }}>
-                    Loading student records...
-                  </td>
+      <div className="admin-table-responsive">
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.86rem' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94A3B8', fontSize: '0.74rem', textTransform: 'uppercase', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+              <th style={{ padding: '12px 16px' }}>Student</th>
+              <th style={{ padding: '12px 16px' }}>Contact Info</th>
+              <th style={{ padding: '12px 16px' }}>Enrolled Course</th>
+              <th style={{ padding: '12px 16px' }}>Learning Progress</th>
+              <th style={{ padding: '12px 16px' }}>Security &amp; Status</th>
+              <th style={{ padding: '12px 16px' }}>Last Active</th>
+              <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              [1, 2, 3, 4, 5].map(i => (
+                <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '120px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '140px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '160px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '100px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '80px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '90px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px', textAlign: 'right' }}><div className="admin-skeleton" style={{ width: '60px', height: '24px', marginLeft: 'auto' }} /></td>
                 </tr>
-              ) : displayStudents.length > 0 ? (
-                displayStudents.map(st => (
+              ))
+            ) : displayStudents.length > 0 ? (
+              displayStudents.map(st => (
                   <tr key={st.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#FFFFFF' }}>
                     <td style={{ padding: '14px 18px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -392,7 +392,6 @@ export default function StudentsDirectoryPage() {
             </tbody>
           </table>
         </div>
-      </div>
 
       {/* Student Progress Detail Drawer */}
       {selectedStudent && (

@@ -271,35 +271,36 @@ _Please log in on your browser to watch your 11 modules and 36 HD lectures._`;
       </div>
 
       {/* Requests Table */}
-      <div style={{
-        backgroundColor: '#111827',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        overflow: 'hidden'
-      }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94A3B8', fontSize: '0.78rem', textTransform: 'uppercase', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-                <th style={{ padding: '14px 18px' }}>Enrollment ID</th>
-                <th style={{ padding: '14px 18px' }}>Student</th>
-                <th style={{ padding: '14px 18px' }}>Contact</th>
-                <th style={{ padding: '14px 18px' }}>Payment Method</th>
-                <th style={{ padding: '14px 18px' }}>Amount</th>
-                <th style={{ padding: '14px 18px' }}>Receipt</th>
-                <th style={{ padding: '14px 18px' }}>Status</th>
-                <th style={{ padding: '14px 18px', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={8} style={{ padding: '36px', textAlign: 'center', color: '#94A3B8' }}>
-                    Loading enrollment applications...
-                  </td>
+      <div className="admin-table-responsive">
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.86rem' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94A3B8', fontSize: '0.74rem', textTransform: 'uppercase', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+              <th style={{ padding: '12px 16px' }}>Enrollment ID</th>
+              <th style={{ padding: '12px 16px' }}>Student</th>
+              <th style={{ padding: '12px 16px' }}>Contact</th>
+              <th style={{ padding: '12px 16px' }}>Payment Method</th>
+              <th style={{ padding: '12px 16px' }}>Amount</th>
+              <th style={{ padding: '12px 16px' }}>Receipt</th>
+              <th style={{ padding: '12px 16px' }}>Status</th>
+              <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              [1, 2, 3, 4, 5].map(i => (
+                <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '100px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '130px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '140px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '90px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '80px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '60px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '70px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px', textAlign: 'right' }}><div className="admin-skeleton" style={{ width: '60px', height: '24px', marginLeft: 'auto' }} /></td>
                 </tr>
-              ) : requests.length > 0 ? (
-                requests.map(req => (
+              ))
+            ) : requests.length > 0 ? (
+              requests.map(req => (
                   <tr key={req.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#FFFFFF' }}>
                     <td style={{ padding: '14px 18px', fontFamily: 'monospace', color: 'var(--primary)', fontWeight: '700' }}>
                       {req.enrollment_id}
@@ -401,7 +402,6 @@ _Please log in on your browser to watch your 11 modules and 36 HD lectures._`;
             </tbody>
           </table>
         </div>
-      </div>
 
       {/* Review Modal Drawer */}
       {selectedReq && (

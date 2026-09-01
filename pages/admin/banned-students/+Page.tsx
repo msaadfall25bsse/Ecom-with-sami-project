@@ -250,33 +250,33 @@ export default function BannedStudentsPage() {
       </div>
 
       {/* 4. Banned Students Table */}
-      <div style={{
-        backgroundColor: '#111827',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        overflow: 'hidden'
-      }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94A3B8', fontSize: '0.78rem', textTransform: 'uppercase', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-                <th style={{ padding: '14px 18px' }}>Student</th>
-                <th style={{ padding: '14px 18px' }}>Contact Info</th>
-                <th style={{ padding: '14px 18px' }}>Security Strikes</th>
-                <th style={{ padding: '14px 18px' }}>Violation Reason</th>
-                <th style={{ padding: '14px 18px' }}>Saved Progress</th>
-                <th style={{ padding: '14px 18px' }}>Incident Date</th>
-                <th style={{ padding: '14px 18px', textAlign: 'right' }}>Admin Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={7} style={{ padding: '36px', textAlign: 'center', color: '#94A3B8' }}>
-                    Loading flagged accounts...
-                  </td>
+      <div className="admin-table-responsive">
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.86rem' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94A3B8', fontSize: '0.74rem', textTransform: 'uppercase', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+              <th style={{ padding: '12px 16px' }}>Student</th>
+              <th style={{ padding: '12px 16px' }}>Contact Info</th>
+              <th style={{ padding: '12px 16px' }}>Security Strikes</th>
+              <th style={{ padding: '12px 16px' }}>Violation Reason</th>
+              <th style={{ padding: '12px 16px' }}>Saved Progress</th>
+              <th style={{ padding: '12px 16px' }}>Incident Date</th>
+              <th style={{ padding: '12px 16px', textAlign: 'right' }}>Admin Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              [1, 2, 3, 4].map(i => (
+                <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '120px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '130px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '90px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '140px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '80px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '90px', height: '18px' }} /></td>
+                  <td style={{ padding: '14px 16px', textAlign: 'right' }}><div className="admin-skeleton" style={{ width: '60px', height: '24px', marginLeft: 'auto' }} /></td>
                 </tr>
-              ) : filteredList.length > 0 ? (
+              ))
+            ) : filteredList.length > 0 ? (
                 filteredList.map(st => {
                   const isSuspended = st.status === 'suspended' || (st.security_strikes || 0) >= 3;
                   const cleanPhone = (st.phone || '').replace(/[^0-9]/g, '');
@@ -474,7 +474,6 @@ export default function BannedStudentsPage() {
             </tbody>
           </table>
         </div>
-      </div>
 
       {/* 5. Forensic Audit Log Drawer Modal */}
       {selectedStudent && (

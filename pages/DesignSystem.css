@@ -1994,3 +1994,143 @@ body {
     display: none !important;
   }
 }
+
+/* ==========================================================================
+   ADMIN PANEL RESPONSIVE STABILITY & ANTI-JITTER DESIGN SYSTEM
+   ========================================================================== */
+
+/* 1. Admin Root & Viewport Safety */
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+  background-color: #0B0F19;
+  color: #F8FAFC;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* 2. Admin Sidebar */
+.admin-sidebar {
+  width: 260px;
+  background-color: #111827;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+/* 3. Admin Main Content Wrapper */
+.admin-main-wrap {
+  flex: 1;
+  margin-left: 260px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-width: 0;
+  width: calc(100% - 260px);
+  background-color: #0B0F19;
+  overflow-x: hidden;
+}
+
+.admin-main-wrap main {
+  padding: 32px 28px;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 4. Admin Header */
+.admin-header {
+  height: 64px;
+  background-color: #111827;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  backdrop-filter: blur(8px);
+}
+
+/* 5. Admin Responsive Table Wrapper */
+.admin-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #111827;
+}
+
+.admin-table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+.admin-table-responsive::-webkit-scrollbar-track {
+  background: #0B0F19;
+}
+.admin-table-responsive::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+}
+
+/* 6. Admin Dark Skeleton Animation (Zero Layout Shift) */
+@keyframes adminSkeletonPulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.4; }
+}
+
+.admin-skeleton {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.09) 37%, rgba(255, 255, 255, 0.04) 63%);
+  background-size: 400% 100%;
+  animation: adminSkeletonPulse 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+/* 7. Admin Responsive Breakpoints (Mobile & Tablet) */
+@media (max-width: 900px) {
+  .admin-sidebar {
+    transform: translateX(-100%);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6);
+  }
+  .admin-sidebar.open {
+    transform: translateX(0);
+  }
+  .admin-main-wrap {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  .mobile-hamburger {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+  .admin-main-wrap main {
+    padding: 20px 14px !important;
+  }
+  .admin-header {
+    padding: 0 16px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-header-title {
+    font-size: 0.82rem !important;
+  }
+  .admin-user-name {
+    display: none !important;
+  }
+  .admin-grid-cards {
+    grid-template-columns: 1fr !important;
+  }
+}
+

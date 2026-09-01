@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { AdminLayout } from '../../../components/AdminLayout';
 import { 
   Video, Plus, Edit2, Trash2, CheckCircle2, AlertCircle, 
   Search, ChevronDown, ChevronRight, Play, Clock, FileText, 
@@ -282,12 +281,28 @@ export default function AdminCurriculumPage() {
     return { ...mod, lessons };
   }).filter(mod => mod.lessons.length > 0 || !searchQuery.trim());
 
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div className="admin-skeleton" style={{ width: '260px', height: '32px', marginBottom: '8px' }} />
+            <div className="admin-skeleton" style={{ width: '380px', height: '18px' }} />
+          </div>
+          <div className="admin-skeleton" style={{ width: '150px', height: '40px', borderRadius: '8px' }} />
+        </div>
+        {[1, 2, 3].map(i => (
+          <div key={i} className="admin-skeleton" style={{ height: '120px', borderRadius: '10px' }} />
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <AdminLayout>
-      <div style={{ padding: '24px 32px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
         {/* Header Section */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '12px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
               <span className="badge-pill badge-cyan" style={{ fontSize: '0.75rem' }}>WEB LMS CURRICULUM CMS</span>
@@ -781,6 +796,5 @@ export default function AdminCurriculumPage() {
         )}
 
       </div>
-    </AdminLayout>
   );
 }
