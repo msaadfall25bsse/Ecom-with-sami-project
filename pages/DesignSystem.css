@@ -2096,7 +2096,13 @@ body {
   border-radius: 6px;
 }
 
-/* 7. Admin Responsive Breakpoints (Mobile & Tablet) */
+/* 7. Admin Responsive Breakpoints (Mobile, Tablet, Laptop, Desktop) */
+@media (max-width: 1024px) {
+  .admin-main-wrap main {
+    padding: 24px 18px !important;
+  }
+}
+
 @media (max-width: 900px) {
   .admin-sidebar {
     transform: translateX(-100%);
@@ -2122,6 +2128,25 @@ body {
   }
 }
 
+@media (max-width: 768px) {
+  .admin-tab-bar {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+  }
+  .admin-tab-bar::-webkit-scrollbar {
+    height: 3px;
+  }
+  .admin-actions-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .admin-actions-bar > * {
+    width: 100% !important;
+  }
+}
+
 @media (max-width: 640px) {
   .admin-header-title {
     font-size: 0.82rem !important;
@@ -2131,6 +2156,37 @@ body {
   }
   .admin-grid-cards {
     grid-template-columns: 1fr !important;
+  }
+  
+  /* Make all 2-column form grids stack vertically on mobile */
+  .admin-form-grid, .grid-2-col, [style*="gridTemplateColumns: 'repeat(auto-fit, minmax(280px"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Responsive modals & dialogs */
+  .admin-modal-content, [role="dialog"], .admin-dialog {
+    width: 94vw !important;
+    max-width: 94vw !important;
+    margin: 10px auto !important;
+    padding: 18px 14px !important;
+    max-height: 88vh !important;
+    overflow-y: auto !important;
+    border-radius: 10px !important;
+  }
+
+  /* Optimize touch target sizes */
+  input, select, textarea {
+    font-size: 16px !important; /* Prevents auto-zoom on mobile safari/chrome */
+  }
+
+  /* Responsive button clusters */
+  .admin-btn-group {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+  .admin-btn-group button, .admin-btn-group a {
+    width: 100% !important;
+    justify-content: center !important;
   }
 }
 
@@ -2145,20 +2201,20 @@ body {
   }
 
   .admin-main-wrap main {
-    padding: 14px 10px !important;
+    padding: 12px 8px !important;
   }
 
   .admin-header {
-    padding: 0 12px !important;
-    height: 56px !important;
+    padding: 0 10px !important;
+    height: 54px !important;
   }
 
   .admin-header-title {
-    font-size: 0.78rem !important;
+    font-size: 0.76rem !important;
   }
 
-  /* Prevent elements from pushing viewport width */
-  input, select, textarea, button {
+  /* Prevent any element from exceeding viewport width */
+  input, select, textarea, button, table {
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
@@ -2170,6 +2226,17 @@ body {
 
   .admin-skeleton {
     animation: adminSkeletonPulse 2.5s ease-in-out infinite !important;
+  }
+
+  /* Compact typography on small devices */
+  h1 {
+    font-size: 1.35rem !important;
+  }
+  h2 {
+    font-size: 1.15rem !important;
+  }
+  h3 {
+    font-size: 1rem !important;
   }
 }
 
