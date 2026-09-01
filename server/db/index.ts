@@ -142,6 +142,21 @@ export function initDatabase() {
     );
   `);
 
+  // Ensure default master admin exists
+  try {
+    const existingAdmin = db.prepare('SELECT id FROM admins LIMIT 1').get();
+    if (!existingAdmin) {
+      const defaultHash = bcrypt.hashSync('admin123', 10);
+      db.prepare(`
+        INSERT INTO admins (name, email, password, role)
+        VALUES (?, ?, ?, 'admin')
+      `).run('Sami Admin', 'admin@samiecom.com', defaultHash);
+      console.log('✅ Default master admin seeded: admin@samiecom.com / admin123');
+    }
+  } catch (err) {
+    console.error('Error ensuring master admin:', err);
+  }
+
   // Helper to ensure new columns exist without breaking existing database
   function addColumnIfNotExists(table: string, column: string, typeDef: string) {
     try {
