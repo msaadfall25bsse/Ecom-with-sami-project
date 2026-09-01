@@ -10,7 +10,12 @@
     "preview": "vike build && vike preview",
     "backup": "tsx scripts/backup_database.ts"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
+    "@types/node": "^26.3.0",
+    "@vitejs/plugin-react": "^6.0.5",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.3",
     "canvas-confetti": "^1.9.4",
@@ -25,8 +30,11 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwind-merge": "^3.6.0",
+    "tsx": "^4.23.12",
+    "typescript": "^6.0.3",
     "vike": "0.4.260",
-    "vike-react": "^0.6.25"
+    "vike-react": "^0.6.25",
+    "vite": "^8.2.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -36,14 +44,9 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.2.0",
-    "@types/node": "^26.3.0",
     "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.0.5",
-    "tsx": "^4.23.12",
-    "typescript": "^6.0.3",
-    "vite": "^8.2.1"
+    "@types/react-dom": "^19.2.4"
   },
   "type": "module",
   "allowScripts": {
