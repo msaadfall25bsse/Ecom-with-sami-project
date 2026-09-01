@@ -8,10 +8,10 @@ const serverPath = path.join(__dirname, 'server', 'index.ts');
 const isWin = process.platform === 'win32';
 const npxCmd = isWin ? 'npx.cmd' : 'npx';
 
-const child = spawn(npxCmd, ['tsx', serverPath], {
+const child = spawn(npxCmd, ['tsx', `"${serverPath}"`], {
   stdio: 'inherit',
   env: process.env,
-  shell: isWin
+  shell: true
 });
 
 child.on('exit', (code) => {

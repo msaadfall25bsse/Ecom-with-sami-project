@@ -81,8 +81,8 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-// Vike SSR Catch-All Middleware for Web Pages
-app.all('*', async (req, res, next) => {
+// Vike SSR Catch-All Middleware for Web Pages (Express 5 compatible)
+app.use(async (req, res, next) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
     return next();
   }

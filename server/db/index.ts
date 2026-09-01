@@ -1,13 +1,130 @@
-import Database from 'better-sqlite3';
+import initSqlJs from 'sql.js';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
 
-const DB_PATH = path.join(process.cwd(), 'sami_database.sqlite');
-export const db = new Database(DB_PATH);
+export class SqlJsDatabase {
+  private rawDb: any;
+  private dbPath: string;
+  private saveTimeout: NodeJS.Timeout | null = null;
 
-// Enable WAL mode & foreign keys for performance and data integrity
-db.pragma('journal_mode = WAL');
+  constructor(rawDb: any, dbPath: string) {
+    this.rawDb = rawDb;
+    this.dbPath = dbPath;
+  }
+
+  save() {
+    try {
+      const data = this.rawDb.export();
+      const buffer = Buffer.from(data);
+      fs.writeFileSync(this.dbPath, buffer);
+    } catch (err) {
+      console.error('Failed to persist database:', err);
+    }
+  }
+
+  private debounceSave() {
+    if (this.saveTimeout) clearTimeout(this.saveTimeout);
+    this.saveTimeout = setTimeout(() => {
+      this.save();
+    }, 100);
+  }
+
+  exec(sql: string) {
+    try {
+      this.rawDb.exec(sql);
+      this.debounceSave();
+    } catch (err) {
+      console.error('db.exec error:', err);
+      throw err;
+    }
+  }
+
+  pragma(sql: string) {
+    try {
+      return this.rawDb.exec(`PRAGMA ${sql}`);
+    } catch {
+      return [];
+    }
+  }
+
+  prepare(sql: string) {
+    const rawDb = this.rawDb;
+    const self = this;
+
+    const normalizeParams = (params: any[]) => {
+      if (params.length === 1 && Array.isArray(params[0])) {
+        return params[0];
+      }
+      return params;
+    };
+
+    return {
+      all(...rawParams: any[]): any[] {
+        const params = normalizeParams(rawParams);
+        const stmt = rawDb.prepare(sql);
+        if (params.length > 0) {
+          stmt.bind(params);
+        }
+        const results: any[] = [];
+        while (stmt.step()) {
+          results.push(stmt.getAsObject());
+        }
+        stmt.free();
+        return results;
+      },
+
+      get(...rawParams: any[]): any {
+        const params = normalizeParams(rawParams);
+        const stmt = rawDb.prepare(sql);
+        if (params.length > 0) {
+          stmt.bind(params);
+        }
+        let result: any = undefined;
+        if (stmt.step()) {
+          result = stmt.getAsObject();
+        }
+        stmt.free();
+        return result;
+      },
+
+      run(...rawParams: any[]): { lastInsertRowid: number; changes: number } {
+        const params = normalizeParams(rawParams);
+        if (params.length > 0) {
+          rawDb.run(sql, params);
+        } else {
+          rawDb.run(sql);
+        }
+        self.debounceSave();
+
+        let lastInsertRowid = 0;
+        let changes = 0;
+        try {
+          const rowIdRes = rawDb.exec('SELECT last_insert_rowid() as id');
+          if (rowIdRes.length > 0 && rowIdRes[0].values.length > 0) {
+            lastInsertRowid = rowIdRes[0].values[0][0];
+          }
+          const changesRes = rawDb.exec('SELECT changes() as c');
+          if (changesRes.length > 0 && changesRes[0].values.length > 0) {
+            changes = changesRes[0].values[0][0];
+          }
+        } catch {}
+
+        return { lastInsertRowid, changes };
+      }
+    };
+  }
+}
+
+const SQL = await initSqlJs();
+const DB_PATH = path.join(process.cwd(), 'sami_database.sqlite');
+let fileBuffer: Buffer | null = null;
+if (fs.existsSync(DB_PATH)) {
+  fileBuffer = fs.readFileSync(DB_PATH);
+}
+const rawDb = fileBuffer ? new SQL.Database(fileBuffer) : new SQL.Database();
+export const db = new SqlJsDatabase(rawDb, DB_PATH);
+
 db.pragma('foreign_keys = ON');
 
 export function initDatabase() {
