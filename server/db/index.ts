@@ -146,12 +146,12 @@ export function initDatabase() {
   try {
     const existingAdmin = db.prepare('SELECT id FROM admins LIMIT 1').get();
     if (!existingAdmin) {
-      const defaultHash = bcrypt.hashSync('admin123', 10);
+      const defaultHash = bcrypt.hashSync('SamiMaster@2026', 10);
       db.prepare(`
         INSERT INTO admins (name, email, password, role)
         VALUES (?, ?, ?, 'admin')
-      `).run('Sami Admin', 'admin@samiecom.com', defaultHash);
-      console.log('✅ Default master admin seeded: admin@samiecom.com / admin123');
+      `).run('Sami Ur Rehman', 'sami@ecomwithsami.com', defaultHash);
+      console.log('✅ Default master admin seeded: sami@ecomwithsami.com / SamiMaster@2026');
     }
   } catch (err) {
     console.error('Error ensuring master admin:', err);

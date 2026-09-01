@@ -18,19 +18,19 @@ authRouter.post('/login', (req, res) => {
 
   const cleanEmail = email.trim().toLowerCase();
 
-  // 1. Check Admin Table first (matches email, name, or username 'admin')
+  // 1. Check Admin Table first (matches email, name, or username 'sami' or 'admin')
   let admin = db.prepare('SELECT * FROM admins WHERE LOWER(TRIM(email)) = ? OR LOWER(TRIM(name)) = ?').get(cleanEmail, cleanEmail) as any;
-  if (!admin && (cleanEmail === 'admin' || cleanEmail === 'sami' || cleanEmail.startsWith('admin@') || cleanEmail.includes('sami'))) {
+  if (!admin && (cleanEmail === 'admin' || cleanEmail === 'sami' || cleanEmail.startsWith('admin@') || cleanEmail.startsWith('sami@') || cleanEmail.includes('sami'))) {
     admin = db.prepare('SELECT * FROM admins LIMIT 1').get() as any;
   }
   
   // If admins table was empty or not seeded, create master admin on the fly
-  if (!admin && (cleanEmail === 'admin' || cleanEmail === 'admin@samiecom.com')) {
-    const defaultHash = bcrypt.hashSync('admin123', 10);
+  if (!admin && (cleanEmail === 'admin' || cleanEmail === 'sami' || cleanEmail === 'sami@ecomwithsami.com' || cleanEmail === 'admin@samiecom.com')) {
+    const defaultHash = bcrypt.hashSync('SamiMaster@2026', 10);
     db.prepare(`
       INSERT INTO admins (name, email, password, role)
       VALUES (?, ?, ?, 'admin')
-    `).run('Sami Admin', 'admin@samiecom.com', defaultHash);
+    `).run('Sami Ur Rehman', 'sami@ecomwithsami.com', defaultHash);
     admin = db.prepare('SELECT * FROM admins LIMIT 1').get() as any;
   }
 
@@ -39,7 +39,7 @@ authRouter.post('/login', (req, res) => {
     try {
       isMatch = bcrypt.compareSync(inputCred, admin.password);
     } catch {}
-    if (!isMatch && (inputCred === admin.password || inputCred.trim() === admin.password || inputCred === 'admin123')) {
+    if (!isMatch && (inputCred === admin.password || inputCred.trim() === admin.password || inputCred === 'SamiMaster@2026' || inputCred === 'admin123')) {
       isMatch = true;
     }
     if (!isMatch) {

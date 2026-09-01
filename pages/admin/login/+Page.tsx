@@ -168,7 +168,7 @@ export default function AdminLoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@samiecom.com or admin"
+                placeholder="sami@ecomwithsami.com or admin"
                 autoComplete="username"
                 style={{
                   width: '100%',
