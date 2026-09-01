@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
-  // 1. Instant Cached User Hydration (Zero Blank Flash)
+  // 1. Instant Cached User Hydration
   const [adminUser, setAdminUser] = useState<any>(() => {
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('sami_admin_user');
@@ -28,6 +28,17 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       }
     }
     return { name: 'Sami Admin', email: 'admin@samiecom.com' };
+  });
+
+  const [authStatus, setAuthStatus] = useState<'validating' | 'authorized' | 'unauthorized'>(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('sami_admin_token');
+      if (token) return 'authorized';
+      const path = (window.location.pathname || '').replace(/\/+$/, '');
+      if (path === '/admin/login') return 'authorized';
+      return 'unauthorized';
+    }
+    return 'authorized';
   });
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -51,20 +62,23 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     };
   }, [sidebarOpen]);
 
-  // 3. Silent Background Verification (SWR - No Re-render Jitter)
+  // 3. Silent Background Verification (Zero Reload Loop)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    setCurrentPath(window.location.pathname);
+    const path = (window.location.pathname || '').replace(/\/+$/, '') || '/admin';
+    setCurrentPath(path);
     const token = localStorage.getItem('sami_admin_token');
 
-    // Zero-Trust Guard: If no token and not on login page, redirect smoothly
-    if (!token && window.location.pathname !== '/admin/login') {
-      window.location.href = '/admin/login';
+    // If no token and not on login page, show unauthorized prompt without hard browser looping
+    if (!token && path !== '/admin/login') {
+      setAuthStatus('unauthorized');
       return;
     }
 
     if (token) {
+      setAuthStatus('authorized');
+
       // Verify token silently
       fetch('/api/auth/me', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -74,13 +88,16 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           if (!data.success || data.user?.role !== 'admin') {
             localStorage.removeItem('sami_admin_token');
             localStorage.removeItem('sami_admin_user');
-            window.location.href = '/admin/login';
+            setAuthStatus('unauthorized');
           } else if (data.user) {
+            setAuthStatus('authorized');
             setAdminUser(data.user);
             localStorage.setItem('sami_admin_user', JSON.stringify(data.user));
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          // If network glitch or offline, preserve authorized session from cache
+        });
 
       // Silent metrics sync
       fetch('/api/admin/overview', {
@@ -106,6 +123,68 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('sami_admin_user');
     window.location.href = '/admin/login';
   };
+
+  // If unauthorized and session expired, render graceful login prompt instead of infinite reload loops
+  if (authStatus === 'unauthorized') {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: '#0B0F19',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px'
+      }}>
+        <div style={{
+          backgroundColor: '#111827',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '14px',
+          padding: '36px 28px',
+          maxWidth: '420px',
+          width: '100%',
+          textAlign: 'center',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)'
+        }}>
+          <div style={{
+            width: '52px',
+            height: '52px',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, #00A0DF, #006699)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            margin: '0 auto 16px auto',
+            boxShadow: '0 0 20px rgba(0, 160, 223, 0.35)'
+          }}>
+            <Shield size={26} />
+          </div>
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
+            Admin Login Required
+          </h2>
+          <p style={{ fontSize: '0.88rem', color: '#94A3B8', marginBottom: '24px', lineHeight: 1.5 }}>
+            Your admin session has ended or credentials were not found. Please log in to continue.
+          </p>
+          <a
+            href="/admin/login"
+            className="btn-primary"
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '12px',
+              borderRadius: '8px',
+              fontSize: '0.94rem',
+              fontWeight: 700,
+              textDecoration: 'none',
+              boxSizing: 'border-box'
+            }}
+          >
+            Sign In to Admin Portal
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   const navItems = [
     { label: 'Dashboard', path: '/admin', icon: <LayoutDashboard size={18} /> },

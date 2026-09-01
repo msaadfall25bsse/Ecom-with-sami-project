@@ -10,11 +10,25 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // If already logged in, redirect to /admin
+    // Only redirect if valid admin token is verified with backend
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('sami_admin_token');
       if (token) {
-        window.location.href = '/admin';
+        fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.user?.role === 'admin') {
+              window.location.href = '/admin';
+            } else {
+              localStorage.removeItem('sami_admin_token');
+              localStorage.removeItem('sami_admin_user');
+            }
+          })
+          .catch(() => {
+            // Keep on login page if network/server issue
+          });
       }
     }
   }, []);

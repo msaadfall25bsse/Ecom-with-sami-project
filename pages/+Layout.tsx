@@ -13,7 +13,9 @@ import { analytics } from "../utils/analytics";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pageContext = usePageContext();
-  const urlPathname = pageContext?.urlPathname || "/";
+  const rawPath = pageContext?.urlPathname || "/";
+  // Robust normalization (handles trailing slashes and query params)
+  const urlPathname = rawPath.split("?")[0].replace(/\/+$/, "") || "/";
 
   // Track PageViews across client-side SPA navigation
   useEffect(() => {
