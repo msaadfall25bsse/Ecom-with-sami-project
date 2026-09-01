@@ -1,0 +1,2 @@
+<?php
+define('VDOCIPHER_API_SECRET', 'JwUSh8xsfNhAO49rD46UL5lRRnCe13sJxb4Uzy59u2BnqwQuX9WfrmGWMplTd7en');

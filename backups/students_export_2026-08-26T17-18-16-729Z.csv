@@ -1,0 +1,8 @@
+id,name,email,phone,city,status,created_at,last_active_at
+"1","Muhammad Ahmed","ahmed.student@gmail.com","+923001234567","Karachi","active","2026-08-26 13:20:12","2026-08-26 17:14:09"
+"2","Usman Ghani","usman.dropship@gmail.com","+923219876543","Lahore","active","2026-08-26 13:20:12","2026-08-26 11:20:12"
+"3","Sara Khan","sara.k@gmail.com","+923335557788","Islamabad","active","2026-08-26 13:20:12","2026-08-26 11:20:12"
+"4","Ali Raza","aliraza.ecom@gmail.com","+923451122334","Rawalpindi","active","2026-08-26 13:20:12","2026-08-26 11:20:12"
+"5","Farhan Zaheer","farhan.z@gmail.com","+923124455667","Peshawar","active","2026-08-26 13:20:12","2026-08-26 11:20:12"
+"6","Hassan Nawaz","hassan.n@gmail.com","+923447766554","Faisalabad","active","2026-08-26 16:48:44",""
+"7","Kamran Akmal","kamran.ak@gmail.com","+923019988776","Multan","active","2026-08-26 17:12:14",""
