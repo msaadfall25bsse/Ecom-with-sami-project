@@ -8,7 +8,9 @@ const config: Config = {
   // https://vike.dev/head-tags
   title: "Ecom With Sami - Master UAE & KSA Dropshipping",
   description: "Learn high-ticket GCC e-commerce & dropshipping with Sami Ur Rehman",
-  ssr: true,
+  prerender: {
+    partial: true
+  },
 
   extends: [vikeReact],
 };
