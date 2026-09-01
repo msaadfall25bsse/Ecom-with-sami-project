@@ -66,29 +66,20 @@ export function ScrollEffects() {
     const triggerVisible = () => {
       const elements = document.querySelectorAll('.scroll-animate:not(.is-visible)');
       elements.forEach(el => {
-        const rect = el.getBoundingClientRect();
-        // If already in viewport or close, show immediately
-        if (rect.top < window.innerHeight + 100) {
-          el.classList.add('is-visible');
-        } else {
-          observer.observe(el);
-        }
+        observer.observe(el);
       });
     };
 
     triggerVisible();
 
-    // Re-check on DOM updates / page navigation
-    const checkInterval = setInterval(triggerVisible, 300);
-    // Absolute fail-safe after 1.5s: ensure all elements are visible
+    // Absolute fail-safe after 500ms: ensure all elements are visible
     const safetyTimer = setTimeout(() => {
       document.querySelectorAll('.scroll-animate').forEach(el => el.classList.add('is-visible'));
-    }, 1500);
+    }, 500);
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       observer.disconnect();
-      clearInterval(checkInterval);
       clearTimeout(safetyTimer);
     };
   }, []);

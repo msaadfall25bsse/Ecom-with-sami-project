@@ -204,7 +204,7 @@ export default function StudentsDirectoryPage() {
         </div>
 
         {/* Search */}
-        <div style={{ position: 'relative', minWidth: '260px' }}>
+        <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 0, width: '100%', maxWidth: '100%' }}>
           <Search size={16} color="#64748B" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
           <input
             type="text"
@@ -219,7 +219,8 @@ export default function StudentsDirectoryPage() {
               borderRadius: '6px',
               color: '#FFFFFF',
               fontSize: '0.86rem',
-              outline: 'none'
+              outline: 'none',
+              boxSizing: 'border-box'
             }}
           />
         </div>
