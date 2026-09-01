@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
+import { renderPage } from 'vike/server';
 import { initDatabase, db } from './db/index.js';
 import { authRouter } from './routes/auth.js';
 import { enrollmentRouter } from './routes/enrollments.js';
@@ -16,6 +17,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const isProduction = process.env.NODE_ENV === 'production';
 
 // Initialize Database & Seeds
 initDatabase();
@@ -39,6 +41,12 @@ if (!fs.existsSync(uploadDir)) {
 // Static directories
 app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
 app.use('/assets', express.static(path.join(process.cwd(), 'assets')));
+
+// Serve built Vike client assets in production or when dist/client exists
+const clientDist = path.join(process.cwd(), 'dist', 'client');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+}
 
 // API Routes
 app.use('/api/auth', authRouter);
@@ -73,8 +81,27 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+// Vike SSR Catch-All Middleware for Web Pages
+app.all('*', async (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+    return next();
+  }
+  try {
+    const pageContext = await renderPage({ urlOriginal: req.originalUrl });
+    const { httpResponse } = pageContext;
+    if (!httpResponse) {
+      return next();
+    }
+    const { statusCode, headers, body } = httpResponse;
+    headers.forEach(([name, value]) => res.setHeader(name, value));
+    res.status(statusCode).send(body);
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 SAMI Backend Server running on http://localhost:${PORT}`);
+  console.log(`🚀 SAMI Full-Stack Server running on http://localhost:${PORT}`);
   console.log(`🎓 Web LMS API ready on http://localhost:${PORT}/api/lms`);
   console.log(`👑 Admin API ready on http://localhost:${PORT}/api/admin`);
 });

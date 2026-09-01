@@ -6,6 +6,7 @@
     "dev:server": "tsx server/index.ts",
     "server": "tsx server/index.ts",
     "build": "vike build",
+    "start": "tsx server/index.ts",
     "preview": "vike build && vike preview",
     "backup": "tsx scripts/backup_database.ts"
   },
