@@ -119,11 +119,26 @@ export default function HomePage() {
       currency: 'PKR'
     });
 
-    // Hydrate Live CMS Data
+    // Hydrate from Local Cache first
+    if (typeof window !== 'undefined') {
+      try {
+        const cachedSec = localStorage.getItem('sami_cms_sections');
+        if (cachedSec) {
+          const parsed = JSON.parse(cachedSec);
+          const mappedSec: Record<string, any> = {};
+          Object.keys(parsed).forEach(k => {
+            mappedSec[k] = parsed[k]?.content || parsed[k];
+          });
+          setCmsContent((prev: any) => ({ ...prev, ...mappedSec }));
+        }
+      } catch (e) {}
+    }
+
+    // Hydrate Live CMS Data from API
     fetch('/api/public/cms-content')
       .then(res => res.json())
       .then(data => {
-        if (data.success) {
+        if (data && data.success) {
           if (data.sections) {
             setCmsContent((prev: any) => ({
               ...prev,

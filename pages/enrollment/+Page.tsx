@@ -27,10 +27,115 @@ import { analytics } from '../../utils/analytics';
 import { CONTACT_CONFIG } from '../../utils/contactConfig';
 
 export default function EnrollmentPage() {
+  // Official Default Payment Methods (Sardar Samiullah Accounts)
+  const DEFAULT_PAYMENT_METHODS = [
+    {
+      id: 1,
+      method_key: 'easypaisa',
+      title: 'Easypaisa Mobile Wallet',
+      category: 'wallet',
+      badge: 'RECOMMENDED & FASTEST',
+      account_title: 'SARDAR SAMIULLAH',
+      account_number: '03481095933',
+      iban_or_wallet: '',
+      checkout_url: '',
+      instructions: 'Send course fee via Easypaisa Mobile App or USSD code and upload transaction screenshot.',
+      price_display: 'PKR 3,900',
+      is_active: 1,
+      display_order: 1
+    },
+    {
+      id: 2,
+      method_key: 'jazzcash',
+      title: 'JazzCash Account',
+      category: 'wallet',
+      badge: 'INSTANT MOBILE TRANSFER',
+      account_title: 'SARDAR SAMIULLAH',
+      account_number: '03481095933',
+      iban_or_wallet: '',
+      checkout_url: '',
+      instructions: 'Send course fee to JazzCash account and attach proof below.',
+      price_display: 'PKR 3,900',
+      is_active: 1,
+      display_order: 2
+    },
+    {
+      id: 3,
+      method_key: 'upaisa',
+      title: 'UPaisa Mobile Wallet',
+      category: 'wallet',
+      badge: 'MOBILE TRANSFER',
+      account_title: 'SARDAR SAMIULLAH',
+      account_number: '03481095933',
+      iban_or_wallet: '',
+      checkout_url: '',
+      instructions: 'Send course fee via UPaisa app/agent and upload transaction proof.',
+      price_display: 'PKR 3,900',
+      is_active: 1,
+      display_order: 3
+    },
+    {
+      id: 4,
+      method_key: 'meezan_bank',
+      title: 'Meezan Bank Transfer',
+      category: 'bank',
+      badge: 'DIRECT IBFT / RAAST',
+      account_title: 'SARDAR SAMIULLAH',
+      account_number: '0015010112560119',
+      iban_or_wallet: 'PK94MEZN0015010112560119',
+      checkout_url: '',
+      instructions: 'Transfer to Meezan Bank via Raast ID / IBFT using IBAN PK94MEZN0015010112560119 and upload confirmation screenshot.',
+      price_display: 'PKR 3,900',
+      is_active: 1,
+      display_order: 4
+    },
+    {
+      id: 5,
+      method_key: 'binance_crypto',
+      title: 'Binance Pay & USDT (Crypto)',
+      category: 'crypto',
+      badge: 'CRYPTO / ZERO FEE',
+      account_title: 'Sami2026',
+      account_number: '243182889',
+      iban_or_wallet: '0xae8da71c3ad92406e69edc24219918ea58c00dac',
+      checkout_url: '',
+      instructions: 'Binance Pay ID: 243182889 (Nickname: Sami2026) or BEP20 USDT. Upload transfer hash/screenshot.',
+      price_display: '$15 USDT',
+      is_active: 1,
+      display_order: 5
+    },
+    {
+      id: 6,
+      method_key: 'international_card',
+      title: 'Visa / Mastercard Card Checkout',
+      category: 'card',
+      badge: 'OVERSEAS & INTERNATIONAL',
+      account_title: 'Online Card Checkout',
+      account_number: '',
+      iban_or_wallet: '',
+      checkout_url: 'https://whop.com/checkout/plan_0vX2Q4Zz9kK1Z?d2c=true',
+      instructions: 'Overseas & International students can pay directly using any Visa, Mastercard, Apple Pay, or Google Pay.',
+      price_display: '$15 USD',
+      is_active: 1,
+      display_order: 6
+    }
+  ];
+
   // Dynamic Payment Methods & Active Filter
-  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('sami_payment_methods');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return DEFAULT_PAYMENT_METHODS;
+  });
   const [activeFilter, setActiveFilter] = useState<string>('all');
-  const [pmLoading, setPmLoading] = useState<boolean>(true);
+  const [pmLoading, setPmLoading] = useState<boolean>(false);
   
   // Copied states
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -69,8 +174,11 @@ export default function EnrollmentPage() {
     fetch('/api/public/payment-methods')
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.methods && data.methods.length > 0) {
+        if (data && data.success && data.methods && data.methods.length > 0) {
           setPaymentMethods(data.methods);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('sami_payment_methods', JSON.stringify(data.methods));
+          }
           setFormData(prev => ({
             ...prev,
             paymentMethod: data.methods[0].method_key || data.methods[0].title
