@@ -61,13 +61,13 @@ publicRouter.get('/checkout-config', (_req, res) => {
         pakistan: {
           bank: {
             bankName: 'Meezan Bank',
-            accountTitle: settings.meezan_bank_title || 'ECOM WITH SAMI (PVT) LTD',
-            accountNumber: settings.meezan_bank_account || '53020115677150',
-            iban: settings.meezan_bank_iban || 'PK27MEZN0053020115677150'
+            accountTitle: settings.meezan_bank_title || 'SARDAR SAMIULLAH',
+            accountNumber: settings.meezan_bank_account || '0015010112560119',
+            iban: settings.meezan_bank_iban || 'PK94MEZN0015010112560119'
           },
           easypaisa: {
-            accountTitle: settings.easypaisa_title || 'Sami Ur Rehman',
-            accountNumber: settings.easypaisa_number || '03315137294'
+            accountTitle: settings.easypaisa_title || 'SARDAR SAMIULLAH',
+            accountNumber: settings.easypaisa_number || '03481095933'
           }
         },
         international: {

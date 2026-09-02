@@ -24,7 +24,13 @@ import {
   Check,
   Zap,
   Tag,
-  AlertCircle
+  AlertCircle,
+  Building,
+  Smartphone,
+  Coins,
+  RotateCcw,
+  Copy,
+  X
 } from 'lucide-react';
 
 export default function AdminCmsPage() {
@@ -67,8 +73,30 @@ export default function AdminCmsPage() {
     is_published: 1
   });
 
+  // Dynamic Payment Methods State
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [pmLoading, setPmLoading] = useState<boolean>(false);
+  const [pmModalOpen, setPmModalOpen] = useState<boolean>(false);
+  const [pmEditing, setPmEditing] = useState<any | null>(null);
+  const [pmActionLoading, setPmActionLoading] = useState<boolean>(false);
+  const [copiedPmField, setCopiedPmField] = useState<string | null>(null);
+  const [pmForm, setPmForm] = useState({
+    title: '',
+    category: 'bank',
+    badge: '',
+    account_title: '',
+    account_number: '',
+    iban_or_wallet: '',
+    checkout_url: '',
+    instructions: '',
+    price_display: 'PKR 3,900',
+    is_active: 1,
+    display_order: 0
+  });
+
   useEffect(() => {
     fetchCmsData();
+    fetchPaymentMethods();
   }, []);
 
   const fetchCmsData = async () => {
@@ -108,6 +136,174 @@ export default function AdminCmsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchPaymentMethods = async () => {
+    setPmLoading(true);
+    try {
+      const token = localStorage.getItem('sami_admin_token');
+      const res = await fetch('/api/admin/payment-methods', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPaymentMethods(data.methods || []);
+      }
+    } catch (err) {
+      console.error('Error loading payment methods:', err);
+    } finally {
+      setPmLoading(false);
+    }
+  };
+
+  const handleTogglePM = async (id: number) => {
+    try {
+      const token = localStorage.getItem('sami_admin_token');
+      const res = await fetch(`/api/admin/payment-methods/${id}/toggle`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message || 'Payment method status updated');
+        fetchPaymentMethods();
+      } else {
+        alert(data.message || 'Failed to toggle status');
+      }
+    } catch (err) {
+      alert('Error updating payment method status');
+    }
+  };
+
+  const handleDeletePM = async (id: number, title: string) => {
+    if (!confirm(`Are you sure you want to permanently delete "${title}"? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem('sami_admin_token');
+      const res = await fetch(`/api/admin/payment-methods/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`🗑️ ${title} deleted successfully`);
+        fetchPaymentMethods();
+      } else {
+        alert(data.message || 'Failed to delete payment method');
+      }
+    } catch (err) {
+      alert('Error deleting payment method');
+    }
+  };
+
+  const handleSavePM = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pmForm.title.trim()) {
+      alert('Payment Method Title is required');
+      return;
+    }
+    setPmActionLoading(true);
+    try {
+      const token = localStorage.getItem('sami_admin_token');
+      const url = pmEditing ? `/api/admin/payment-methods/${pmEditing.id}` : '/api/admin/payment-methods';
+      const method = pmEditing ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(pmForm)
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(pmEditing ? `✅ ${pmForm.title} updated!` : `✅ ${pmForm.title} created!`);
+        setPmModalOpen(false);
+        setPmEditing(null);
+        fetchPaymentMethods();
+      } else {
+        alert(data.message || 'Failed to save payment method');
+      }
+    } catch (err) {
+      alert('Error saving payment method');
+    } finally {
+      setPmActionLoading(false);
+    }
+  };
+
+  const handleResetPMDefaults = async () => {
+    if (!confirm('Are you sure you want to restore default payment accounts (Easypaisa, JazzCash, UPaisa, Meezan Bank, Binance, Card)?')) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem('sami_admin_token');
+      const res = await fetch('/api/admin/payment-methods/reset-defaults', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('✅ Default payment methods restored successfully!');
+        fetchPaymentMethods();
+      } else {
+        alert(data.message || 'Failed to restore default payment methods');
+      }
+    } catch (err) {
+      alert('Error restoring defaults');
+    }
+  };
+
+  const handleOpenCreatePM = (category = 'bank') => {
+    setPmEditing(null);
+    setPmForm({
+      title: category === 'bank' ? 'Meezan Bank Transfer' :
+             category === 'wallet' ? 'Easypaisa / JazzCash' :
+             category === 'crypto' ? 'Binance Pay & USDT' :
+             category === 'card' ? 'Visa / Mastercard Card Checkout' : 'Custom Payment Method',
+      category,
+      badge: category === 'wallet' ? 'RECOMMENDED & FASTEST' :
+             category === 'bank' ? 'DIRECT BANK / RAAST' :
+             category === 'crypto' ? 'CRYPTO / ZERO FEE' :
+             category === 'card' ? 'OVERSEAS & INTERNATIONAL' : '',
+      account_title: 'SARDAR SAMIULLAH',
+      account_number: '',
+      iban_or_wallet: '',
+      checkout_url: category === 'card' ? 'https://whop.com/checkout/plan_DsfaeyFcXlCwI' : '',
+      instructions: category === 'bank' ? 'Transfer to Meezan Bank via Raast ID / IBFT and upload confirmation screenshot.' :
+                    category === 'wallet' ? 'Send course fee via mobile wallet app and attach transaction proof.' :
+                    category === 'crypto' ? 'Send USDT via Binance Pay ID or BEP20 network and upload hash/screenshot.' :
+                    'Complete payment and upload receipt screenshot below.',
+      price_display: category === 'crypto' ? '$15 USDT' : category === 'card' ? '$15 USD' : 'PKR 3,900',
+      is_active: 1,
+      display_order: paymentMethods.length + 1
+    });
+    setPmModalOpen(true);
+  };
+
+  const handleOpenEditPM = (method: any) => {
+    setPmEditing(method);
+    setPmForm({
+      title: method.title || '',
+      category: method.category || 'bank',
+      badge: method.badge || '',
+      account_title: method.account_title || '',
+      account_number: method.account_number || '',
+      iban_or_wallet: method.iban_or_wallet || '',
+      checkout_url: method.checkout_url || '',
+      instructions: method.instructions || '',
+      price_display: method.price_display || 'PKR 3,900',
+      is_active: method.is_active ?? 1,
+      display_order: method.display_order ?? 0
+    });
+    setPmModalOpen(true);
+  };
+
+  const copyToClipboard = (text: string, fieldId: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedPmField(fieldId);
+    setTimeout(() => setCopiedPmField(null), 2000);
   };
 
   const showToast = (msg: string) => {
@@ -746,212 +942,561 @@ export default function AdminCmsPage() {
       )}
 
       {/* ==========================================================
-          TAB 3: PAYMENT ACCOUNTS & BANKS
+          TAB 3: PAYMENT ACCOUNTS & METHODS (DYNAMIC CMS CRUD)
           ========================================================== */}
       {activeTab === 'pricing' && (
         <div style={{ backgroundColor: '#111827', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '16px' }}>
+          
+          {/* Section Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
             <div>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>💳 Payment Methods &amp; Bank Accounts</h3>
-              <p style={{ fontSize: '0.85rem', color: '#94A3B8', margin: '4px 0 0 0' }}>Configure Easypaisa, Meezan Bank, Binance, and Crypto BEP20 accounts displayed on checkout.</p>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: '800', color: '#FFFFFF', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <CreditCard size={24} color="var(--primary)" />
+                <span>Payment Methods &amp; Receiving Accounts (Full CMS Control)</span>
+              </h3>
+              <p style={{ fontSize: '0.86rem', color: '#94A3B8', margin: '6px 0 0 0' }}>
+                Manage all payment receiving accounts (Easypaisa, JazzCash, UPaisa, Meezan Bank, Binance, Card). Add new accounts, edit credentials, disable, or delete anytime.
+              </p>
             </div>
+
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={handleResetPMDefaults}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '9px 14px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '8px',
+                  color: '#94A3B8',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                <RotateCcw size={15} />
+                <span>Restore Defaults</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleOpenCreatePM('bank')}
+                className="btn-primary"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '9px 18px',
+                  fontSize: '0.85rem',
+                  fontWeight: 800
+                }}
+              >
+                <Plus size={16} />
+                <span>Add Payment Method</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Preset Quick Add Buttons */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600, marginRight: '4px' }}>Quick Add:</span>
             <button
               type="button"
-              disabled={saving}
-              onClick={() => handleSaveSection('payment_accounts', 'Payment Methods & Bank Accounts')}
-              className="btn-primary"
-              style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+              onClick={() => handleOpenCreatePM('bank')}
+              style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: 'rgba(0, 160, 223, 0.12)', border: '1px solid rgba(0, 160, 223, 0.25)', color: 'var(--primary)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
             >
-              <Save size={16} /> {saving ? 'Saving...' : 'Save Payment Accounts'}
+              + Bank Account (Meezan/HBL)
+            </button>
+            <button
+              type="button"
+              onClick={() => handleOpenCreatePM('wallet')}
+              style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', color: '#10B981', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+            >
+              + Mobile Wallet (Easypaisa / JazzCash / UPaisa)
+            </button>
+            <button
+              type="button"
+              onClick={() => handleOpenCreatePM('crypto')}
+              style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.25)', color: '#F59E0B', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+            >
+              + Crypto (Binance Pay / USDT)
+            </button>
+            <button
+              type="button"
+              onClick={() => handleOpenCreatePM('card')}
+              style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: 'rgba(168, 85, 247, 0.12)', border: '1px solid rgba(168, 85, 247, 0.25)', color: '#A855F7', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+            >
+              + Card Checkout (Visa/Mastercard)
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-            
-            {/* Easypaisa Box */}
-            <div style={{ backgroundColor: '#1E293B', borderRadius: 'var(--radius-lg)', padding: '24px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <span style={{ fontSize: '1.4rem' }}>📱</span>
-                <h4 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--accent-green)', margin: 0 }}>Easypaisa Account</h4>
-              </div>
+          {/* Payment Methods Cards Grid */}
+          {pmLoading ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>
+              <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 12px auto', color: 'var(--primary)' }} />
+              <div>Loading Payment Receiving Accounts...</div>
+            </div>
+          ) : paymentMethods.length === 0 ? (
+            <div style={{
+              padding: '40px 20px',
+              textAlign: 'center',
+              backgroundColor: '#1E293B',
+              borderRadius: '12px',
+              border: '1px dashed rgba(255, 255, 255, 0.15)'
+            }}>
+              <CreditCard size={36} color="#64748B" style={{ margin: '0 auto 12px auto' }} />
+              <h4 style={{ color: '#FFFFFF', fontSize: '1.05rem', fontWeight: 700, marginBottom: '6px' }}>No payment methods found</h4>
+              <p style={{ color: '#94A3B8', fontSize: '0.86rem', marginBottom: '18px' }}>
+                Students won't be able to pay on the enrollment page. Restore defaults or add your accounts now.
+              </p>
+              <button
+                type="button"
+                onClick={handleResetPMDefaults}
+                className="btn-primary"
+                style={{ padding: '9px 18px', fontSize: '0.85rem' }}
+              >
+                Restore Standard Payment Methods
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+              {paymentMethods.map((method) => {
+                const isActive = method.is_active === 1;
+                const isBank = method.category === 'bank';
+                const isWallet = method.category === 'wallet';
+                const isCrypto = method.category === 'crypto';
+                const isCard = method.category === 'card';
+
+                const themeColor = isBank ? 'var(--primary)' : isWallet ? '#10B981' : isCrypto ? '#F59E0B' : '#A855F7';
+
+                return (
+                  <div
+                    key={method.id}
+                    style={{
+                      backgroundColor: '#1E293B',
+                      borderRadius: '12px',
+                      padding: '22px',
+                      border: isActive ? `1.5px solid ${themeColor}` : '1px solid rgba(255, 255, 255, 0.08)',
+                      opacity: isActive ? 1 : 0.65,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      position: 'relative',
+                      boxShadow: isActive ? '0 4px 20px rgba(0, 0, 0, 0.25)' : 'none',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div>
+                      {/* Card Header */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '10px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                            color: themeColor,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}>
+                            {isBank && <Building size={20} />}
+                            {isWallet && <Smartphone size={20} />}
+                            {isCrypto && <Coins size={20} />}
+                            {isCard && <CreditCard size={20} />}
+                            {!isBank && !isWallet && !isCrypto && !isCard && <Globe size={20} />}
+                          </div>
+                          <div>
+                            <h4 style={{ fontSize: '1.02rem', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>
+                              {method.title}
+                            </h4>
+                            <span style={{ fontSize: '0.72rem', color: themeColor, fontWeight: 700, textTransform: 'uppercase' }}>
+                              {method.badge || method.category}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Active Status Badge */}
+                        <span style={{
+                          padding: '4px 9px',
+                          borderRadius: '999px',
+                          backgroundColor: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                          border: isActive ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+                          color: isActive ? '#10B981' : '#EF4444',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {isActive ? '● Active' : '○ Disabled'}
+                        </span>
+                      </div>
+
+                      {/* Card Details Table */}
+                      <div style={{
+                        backgroundColor: '#0F172A',
+                        borderRadius: '8px',
+                        padding: '14px',
+                        fontSize: '0.82rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        marginBottom: '16px',
+                        border: '1px solid rgba(255, 255, 255, 0.06)'
+                      }}>
+                        {method.account_title && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                            <span style={{ color: '#94A3B8' }}>Account Title:</span>
+                            <strong style={{ color: '#FFFFFF', textAlign: 'right' }}>{method.account_title}</strong>
+                          </div>
+                        )}
+
+                        {method.account_number && (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                            <span style={{ color: '#94A3B8' }}>{isCrypto ? 'Pay ID / Number:' : 'Account Number:'}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ color: '#FFFFFF', fontWeight: 800, fontFamily: 'monospace' }}>{method.account_number}</span>
+                              <button
+                                type="button"
+                                onClick={() => copyToClipboard(method.account_number, `acc_${method.id}`)}
+                                style={{ background: 'none', border: 'none', color: copiedPmField === `acc_${method.id}` ? '#10B981' : '#94A3B8', cursor: 'pointer', padding: '2px' }}
+                                title="Copy Account Number"
+                              >
+                                {copiedPmField === `acc_${method.id}` ? <Check size={14} /> : <Copy size={14} />}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {method.iban_or_wallet && (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                            <span style={{ color: '#94A3B8' }}>{isCrypto ? 'Wallet Address:' : 'IBAN:'}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ color: themeColor, fontWeight: 700, fontFamily: 'monospace', fontSize: '0.78rem', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {method.iban_or_wallet}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => copyToClipboard(method.iban_or_wallet, `iban_${method.id}`)}
+                                style={{ background: 'none', border: 'none', color: copiedPmField === `iban_${method.id}` ? '#10B981' : '#94A3B8', cursor: 'pointer', padding: '2px' }}
+                                title="Copy IBAN / Wallet"
+                              >
+                                {copiedPmField === `iban_${method.id}` ? <Check size={14} /> : <Copy size={14} />}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {method.checkout_url && (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                            <span style={{ color: '#94A3B8' }}>Checkout Link:</span>
+                            <a
+                              href={method.checkout_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: 'var(--primary)', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <span>Test Link</span>
+                              <ExternalLink size={12} />
+                            </a>
+                          </div>
+                        )}
+
+                        {method.price_display && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                            <span style={{ color: '#94A3B8' }}>Fee Display:</span>
+                            <span style={{ color: '#E2E8F0', fontWeight: 700 }}>{method.price_display}</span>
+                          </div>
+                        )}
+
+                        {method.instructions && (
+                          <div style={{ fontSize: '0.76rem', color: '#94A3B8', fontStyle: 'italic', borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '6px' }}>
+                            {method.instructions}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card Action Controls */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '14px' }}>
+                      
+                      {/* Toggle Active / Inactive */}
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePM(method.id)}
+                        style={{
+                          flex: 1,
+                          padding: '8px 10px',
+                          borderRadius: '6px',
+                          backgroundColor: isActive ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                          border: isActive ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
+                          color: isActive ? '#F87171' : '#10B981',
+                          fontWeight: 700,
+                          fontSize: '0.76rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {isActive ? 'Hide from Website' : 'Show on Website'}
+                      </button>
+
+                      {/* Edit Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditPM(method)}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          color: '#FFFFFF',
+                          fontWeight: 600,
+                          fontSize: '0.76rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <Edit3 size={13} />
+                        <span>Edit</span>
+                      </button>
+
+                      {/* Delete Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePM(method.id, method.title)}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: '6px',
+                          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                          border: '1px solid rgba(239, 68, 68, 0.25)',
+                          color: '#EF4444',
+                          fontWeight: 600,
+                          fontSize: '0.76rem',
+                          cursor: 'pointer'
+                        }}
+                        title="Delete this payment method"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* Modal: Add / Edit Payment Method */}
+      {pmModalOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(6px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+          zIndex: 99999
+        }}>
+          <div style={{
+            backgroundColor: '#111827',
+            border: '1px solid rgba(0, 160, 223, 0.4)',
+            borderRadius: '16px',
+            padding: '28px',
+            width: '100%',
+            maxWidth: '560px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#FFFFFF', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CreditCard size={20} color="var(--primary)" />
+                <span>{pmEditing ? 'Edit Payment Method' : 'Add New Payment Method'}</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => { setPmModalOpen(false); setPmEditing(null); }}
+                style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePM} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Category & Display Order */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Account Title</label>
-                  <input
-                    type="text"
-                    value={paymentContent.easypaisa?.account_title || ''}
-                    onChange={(e) => {
-                      updateSectionField('payment_accounts', 'easypaisa', {
-                        ...paymentContent.easypaisa,
-                        account_title: e.target.value
-                      });
-                    }}
-                    style={{ width: '100%', padding: '10px 12px', backgroundColor: '#0B0F19', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', fontSize: '0.9rem' }}
-                  />
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Category</label>
+                  <select
+                    value={pmForm.category}
+                    onChange={(e) => setPmForm({ ...pmForm, category: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', backgroundColor: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', outline: 'none' }}
+                  >
+                    <option value="bank">🏦 Bank Account (Meezan, HBL, etc.)</option>
+                    <option value="wallet">📱 Mobile Wallet (Easypaisa, JazzCash, UPaisa)</option>
+                    <option value="crypto">₿ Crypto / Binance Pay</option>
+                    <option value="card">💳 Card Checkout (Visa/Mastercard)</option>
+                    <option value="custom">🌐 Custom Method</option>
+                  </select>
                 </div>
+
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Account / Phone Number</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Display Order</label>
                   <input
-                    type="text"
-                    value={paymentContent.easypaisa?.account_number || ''}
-                    onChange={(e) => {
-                      updateSectionField('payment_accounts', 'easypaisa', {
-                        ...paymentContent.easypaisa,
-                        account_number: e.target.value
-                      });
-                    }}
-                    style={{ width: '100%', padding: '10px 12px', backgroundColor: '#0B0F19', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--accent-green)', fontWeight: '800', fontFamily: 'monospace', fontSize: '0.95rem' }}
+                    type="number"
+                    value={pmForm.display_order}
+                    onChange={(e) => setPmForm({ ...pmForm, display_order: Number(e.target.value) })}
+                    style={{ width: '100%', padding: '9px 12px', backgroundColor: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', outline: 'none' }}
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Meezan Bank Box */}
-            <div style={{ backgroundColor: '#1E293B', borderRadius: 'var(--radius-lg)', padding: '24px', border: '1px solid rgba(0, 160, 223, 0.3)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <span style={{ fontSize: '1.4rem' }}>🏦</span>
-                <h4 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--primary)', margin: 0 }}>Meezan Bank Details</h4>
+              {/* Method Title */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>
+                  Payment Method Title <span style={{ color: '#EF4444' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Meezan Bank Transfer, Easypaisa Mobile Wallet, JazzCash Account"
+                  value={pmForm.title}
+                  onChange={(e) => setPmForm({ ...pmForm, title: e.target.value })}
+                  required
+                  style={{ width: '100%', padding: '10px 12px', backgroundColor: '#1E293B', border: '1px solid rgba(0, 160, 223, 0.4)', borderRadius: '6px', color: '#FFFFFF', fontWeight: '700', outline: 'none' }}
+                />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Badge Tag & Price Display */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Company / Account Title</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Badge / Tag (Optional)</label>
                   <input
                     type="text"
-                    value={paymentContent.meezan_bank?.account_title || ''}
-                    onChange={(e) => {
-                      updateSectionField('payment_accounts', 'meezan_bank', {
-                        ...paymentContent.meezan_bank,
-                        account_title: e.target.value
-                      });
-                    }}
-                    style={{ width: '100%', padding: '10px 12px', backgroundColor: '#0B0F19', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', fontSize: '0.9rem' }}
+                    placeholder="e.g. RECOMMENDED & FASTEST, DIRECT BANK / RAAST"
+                    value={pmForm.badge}
+                    onChange={(e) => setPmForm({ ...pmForm, badge: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', backgroundColor: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', outline: 'none' }}
                   />
                 </div>
+
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Account Number</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Amount / Currency Display</label>
                   <input
                     type="text"
-                    value={paymentContent.meezan_bank?.account_number || ''}
-                    onChange={(e) => {
-                      updateSectionField('payment_accounts', 'meezan_bank', {
-                        ...paymentContent.meezan_bank,
-                        account_number: e.target.value
-                      });
-                    }}
-                    style={{ width: '100%', padding: '10px 12px', backgroundColor: '#0B0F19', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', fontFamily: 'monospace', fontSize: '0.95rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>IBAN Number</label>
-                  <input
-                    type="text"
-                    value={paymentContent.meezan_bank?.iban || ''}
-                    onChange={(e) => {
-                      updateSectionField('payment_accounts', 'meezan_bank', {
-                        ...paymentContent.meezan_bank,
-                        iban: e.target.value
-                      });
-                    }}
-                    style={{ width: '100%', padding: '10px 12px', backgroundColor: '#0B0F19', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--primary)', fontFamily: 'monospace', fontSize: '0.9rem' }}
+                    placeholder="e.g. PKR 3,900 or $15 USD"
+                    value={pmForm.price_display}
+                    onChange={(e) => setPmForm({ ...pmForm, price_display: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', backgroundColor: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', outline: 'none' }}
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Binance & Crypto */}
-            <div style={{ backgroundColor: '#1E293B', borderRadius: 'var(--radius-lg)', padding: '24px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <span style={{ fontSize: '1.4rem' }}>₿</span>
-                <h4 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--accent-amber)', margin: 0 }}>Binance &amp; Crypto</h4>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Account Title & Account Number */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Binance Pay ID</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Account Title / Beneficiary Name</label>
                   <input
                     type="text"
-                    value={paymentContent.binance_crypto?.binance_pay_id || ''}
-                    onChange={(e) => {
-                      updateSectionField('payment_accounts', 'binance_crypto', {
-                        ...paymentContent.binance_crypto,
-                        binance_pay_id: e.target.value
-                      });
-                    }}
-                    style={{ width: '100%', padding: '10px 12px', backgroundColor: '#0B0F19', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', fontFamily: 'monospace', fontSize: '0.95rem' }}
+                    placeholder="e.g. SARDAR SAMIULLAH"
+                    value={pmForm.account_title}
+                    onChange={(e) => setPmForm({ ...pmForm, account_title: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', backgroundColor: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', outline: 'none' }}
                   />
                 </div>
+
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Binance Nickname</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Account / Phone / Pay ID</label>
                   <input
                     type="text"
-                    value={paymentContent.binance_crypto?.binance_nickname || ''}
-                    onChange={(e) => {
-                      updateSectionField('payment_accounts', 'binance_crypto', {
-                        ...paymentContent.binance_crypto,
-                        binance_nickname: e.target.value
-                      });
-                    }}
-                    style={{ width: '100%', padding: '10px 12px', backgroundColor: '#0B0F19', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', fontSize: '0.9rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>BEP20 Wallet Address (USDT/BNB)</label>
-                  <input
-                    type="text"
-                    value={paymentContent.binance_crypto?.bep20_wallet || ''}
-                    onChange={(e) => {
-                      updateSectionField('payment_accounts', 'binance_crypto', {
-                        ...paymentContent.binance_crypto,
-                        bep20_wallet: e.target.value
-                      });
-                    }}
-                    style={{ width: '100%', padding: '10px 12px', backgroundColor: '#0B0F19', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--accent-amber)', fontFamily: 'monospace', fontSize: '0.82rem' }}
+                    placeholder="e.g. 03481095933 or 0015010112560119"
+                    value={pmForm.account_number}
+                    onChange={(e) => setPmForm({ ...pmForm, account_number: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', backgroundColor: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: '700', outline: 'none' }}
                   />
                 </div>
               </div>
-            </div>
 
-            {/* International Card Checkout */}
-            <div style={{ backgroundColor: '#1E293B', borderRadius: 'var(--radius-lg)', padding: '24px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <span style={{ fontSize: '1.4rem' }}>🌍</span>
-                <h4 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>International Card Checkout</h4>
+              {/* IBAN / Crypto Wallet Address */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>IBAN Number / Crypto Wallet Address</label>
+                <input
+                  type="text"
+                  placeholder="e.g. PK94MEZN0015010112560119 or 0xae8da7..."
+                  value={pmForm.iban_or_wallet}
+                  onChange={(e) => setPmForm({ ...pmForm, iban_or_wallet: e.target.value })}
+                  style={{ width: '100%', padding: '9px 12px', backgroundColor: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', fontFamily: 'monospace', outline: 'none' }}
+                />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Whop / Stripe Card Checkout URL</label>
-                  <input
-                    type="text"
-                    value={paymentContent.international_card?.whop_url || ''}
-                    onChange={(e) => {
-                      updateSectionField('payment_accounts', 'international_card', {
-                        ...paymentContent.international_card,
-                        whop_url: e.target.value
-                      });
-                    }}
-                    style={{ width: '100%', padding: '10px 12px', backgroundColor: '#0B0F19', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', fontSize: '0.85rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Fee in USD</label>
-                  <input
-                    type="text"
-                    value={paymentContent.international_card?.price_usd || '15'}
-                    onChange={(e) => {
-                      updateSectionField('payment_accounts', 'international_card', {
-                        ...paymentContent.international_card,
-                        price_usd: e.target.value
-                      });
-                    }}
-                    style={{ width: '100%', padding: '10px 12px', backgroundColor: '#0B0F19', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', fontSize: '0.9rem' }}
-                  />
-                </div>
+              {/* Checkout Link URL (for Cards) */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Card / External Checkout URL (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. https://whop.com/checkout/... or Stripe URL"
+                  value={pmForm.checkout_url}
+                  onChange={(e) => setPmForm({ ...pmForm, checkout_url: e.target.value })}
+                  style={{ width: '100%', padding: '9px 12px', backgroundColor: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', outline: 'none' }}
+                />
               </div>
-            </div>
 
+              {/* Instructions */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '4px' }}>Student Instructions &amp; Proof Note</label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Transfer to Meezan Bank via Raast ID / IBFT using IBAN PK94MEZN0015010112560119 and upload confirmation screenshot."
+                  value={pmForm.instructions}
+                  onChange={(e) => setPmForm({ ...pmForm, instructions: e.target.value })}
+                  style={{ width: '100%', padding: '8px 12px', backgroundColor: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#FFFFFF', fontSize: '0.84rem', outline: 'none', resize: 'vertical' }}
+                />
+              </div>
+
+              {/* Active Status Checkbox */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0' }}>
+                <input
+                  type="checkbox"
+                  id="pm_is_active"
+                  checked={pmForm.is_active === 1}
+                  onChange={(e) => setPmForm({ ...pmForm, is_active: e.target.checked ? 1 : 0 })}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--primary)', cursor: 'pointer' }}
+                />
+                <label htmlFor="pm_is_active" style={{ fontSize: '0.86rem', fontWeight: '700', color: '#FFFFFF', cursor: 'pointer' }}>
+                  Active (Show on Student Enrollment &amp; Checkout Page)
+                </label>
+              </div>
+
+              {/* Modal Action Buttons */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => { setPmModalOpen(false); setPmEditing(null); }}
+                  style={{ padding: '10px 18px', borderRadius: '6px', backgroundColor: 'transparent', border: '1px solid #374151', color: '#94A3B8', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={pmActionLoading}
+                  className="btn-primary"
+                  style={{ padding: '10px 24px', fontSize: '0.88rem' }}
+                >
+                  {pmActionLoading ? 'Saving...' : pmEditing ? 'Save Changes' : 'Create Payment Method'}
+                </button>
+              </div>
+
+            </form>
           </div>
         </div>
       )}

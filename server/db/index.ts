@@ -519,11 +519,11 @@ function seedDefaultData() {
     seats_left: '12',
     announcement_text: '🔥 Ramadan Special: UAE & KSA Dropshipping Course 88% OFF - Enroll for PKR 3,900 Today!',
     // Payment Credentials
-    meezan_bank_title: 'ECOM WITH SAMI (PVT) LTD',
-    meezan_bank_account: '53020115677150',
-    meezan_bank_iban: 'PK27MEZN0053020115677150',
-    easypaisa_title: 'Sami Ur Rehman',
-    easypaisa_number: '03315137294',
+    meezan_bank_title: 'SARDAR SAMIULLAH',
+    meezan_bank_account: '0015010112560119',
+    meezan_bank_iban: 'PK94MEZN0015010112560119',
+    easypaisa_title: 'SARDAR SAMIULLAH',
+    easypaisa_number: '03481095933',
     binance_pay_id: '243182889',
     binance_name: 'Sami2026',
     // LMS & Security Settings
@@ -912,14 +912,22 @@ function seedCmsData() {
     insertSection.run('payment_accounts', 'Payment Methods & Bank Accounts', JSON.stringify({
       deposit_fee: '3,900',
       easypaisa: {
-        account_title: 'Sami Ur Rehman',
-        account_number: '03315137294',
+        account_title: 'SARDAR SAMIULLAH',
+        account_number: '03481095933',
         is_recommended: true
       },
+      jazzcash: {
+        account_title: 'SARDAR SAMIULLAH',
+        account_number: '03481095933'
+      },
+      upaisa: {
+        account_title: 'SARDAR SAMIULLAH',
+        account_number: '03481095933'
+      },
       meezan_bank: {
-        account_title: 'ECOM WITH SAMI (PVT) LTD',
-        account_number: '53020115677150',
-        iban: 'PK27MEZN0053020115677150'
+        account_title: 'SARDAR SAMIULLAH',
+        account_number: '0015010112560119',
+        iban: 'PK94MEZN0015010112560119'
       },
       international_card: {
         whop_url: 'https://whop.com/checkout/plan_DsfaeyFcXlCwI',
@@ -1022,8 +1030,8 @@ function seedCmsData() {
       'Easypaisa Mobile Wallet',
       'wallet',
       'RECOMMENDED & FASTEST',
-      'Sami Ur Rehman',
-      '03315137294',
+      'SARDAR SAMIULLAH',
+      '03481095933',
       '',
       '',
       'Send course fee via Easypaisa Mobile App or USSD code and upload the transaction screenshot.',
@@ -1033,33 +1041,48 @@ function seedCmsData() {
     );
 
     insertPM.run(
-      'meezan_bank',
-      'Meezan Bank Transfer',
-      'bank',
-      'DIRECT BANK / MOBILE APP',
-      'ECOM WITH SAMI (PVT) LTD',
-      '53020115677150',
-      'PK27MEZN0053020115677150',
+      'jazzcash',
+      'JazzCash Account',
+      'wallet',
+      'INSTANT MOBILE TRANSFER',
+      'SARDAR SAMIULLAH',
+      '03481095933',
       '',
-      'Transfer to Meezan Bank via Raast or IBFT and upload the confirmation screenshot.',
+      '',
+      'Send course fee to JazzCash account and attach proof below.',
       'PKR 3,900',
       1,
       2
     );
 
     insertPM.run(
-      'jazzcash',
-      'JazzCash Account',
+      'upaisa',
+      'UPaisa Mobile Wallet',
       'wallet',
-      'INSTANT MOBILE TRANSFER',
-      'Sami Ur Rehman',
-      '03000093269',
+      'MOBILE TRANSFER',
+      'SARDAR SAMIULLAH',
+      '03481095933',
       '',
       '',
-      'Send course fee to JazzCash account and attach proof below.',
+      'Send course fee via UPaisa app/agent and upload transaction proof.',
       'PKR 3,900',
       1,
       3
+    );
+
+    insertPM.run(
+      'meezan_bank',
+      'Meezan Bank Transfer',
+      'bank',
+      'DIRECT BANK / MOBILE APP / RAAST',
+      'SARDAR SAMIULLAH',
+      '0015010112560119',
+      'PK94MEZN0015010112560119',
+      '',
+      'Transfer to Meezan Bank via Raast or IBFT using IBAN PK94MEZN0015010112560119 and upload confirmation screenshot.',
+      'PKR 3,900',
+      1,
+      4
     );
 
     insertPM.run(
@@ -1074,7 +1097,7 @@ function seedCmsData() {
       'Binance Pay ID: 243182889 (Nickname: Sami2026) or BEP20 USDT. Upload transfer hash/screenshot.',
       '$15 USDT',
       1,
-      4
+      5
     );
 
     insertPM.run(
@@ -1089,7 +1112,7 @@ function seedCmsData() {
       'Best for students in UAE, KSA, UK, USA. Pay securely with card and upload receipt proof.',
       '$15 USD',
       1,
-      5
+      6
     );
 
     console.log('💳 Default Dynamic Payment Methods Seeded.');

@@ -871,8 +871,8 @@ adminRouter.post('/payment-methods/reset-defaults', (_req, res) => {
       'Easypaisa Mobile Wallet',
       'wallet',
       'RECOMMENDED & FASTEST',
-      'Sami Ur Rehman',
-      '03315137294',
+      'SARDAR SAMIULLAH',
+      '03481095933',
       '',
       '',
       'Send course fee via Easypaisa Mobile App or USSD code and upload the transaction screenshot.',
@@ -882,33 +882,48 @@ adminRouter.post('/payment-methods/reset-defaults', (_req, res) => {
     );
 
     insertPM.run(
-      'meezan_bank',
-      'Meezan Bank Transfer',
-      'bank',
-      'DIRECT BANK / MOBILE APP',
-      'ECOM WITH SAMI (PVT) LTD',
-      '53020115677150',
-      'PK27MEZN0053020115677150',
+      'jazzcash',
+      'JazzCash Account',
+      'wallet',
+      'INSTANT MOBILE TRANSFER',
+      'SARDAR SAMIULLAH',
+      '03481095933',
       '',
-      'Transfer to Meezan Bank via Raast or IBFT and upload the confirmation screenshot.',
+      '',
+      'Send course fee to JazzCash account and attach proof below.',
       'PKR 3,900',
       1,
       2
     );
 
     insertPM.run(
-      'jazzcash',
-      'JazzCash Account',
+      'upaisa',
+      'UPaisa Mobile Wallet',
       'wallet',
-      'INSTANT MOBILE TRANSFER',
-      'Sami Ur Rehman',
-      '03000093269',
+      'MOBILE TRANSFER',
+      'SARDAR SAMIULLAH',
+      '03481095933',
       '',
       '',
-      'Send course fee to JazzCash account and attach proof below.',
+      'Send course fee via UPaisa app/agent and upload transaction proof.',
       'PKR 3,900',
       1,
       3
+    );
+
+    insertPM.run(
+      'meezan_bank',
+      'Meezan Bank Transfer',
+      'bank',
+      'DIRECT BANK / MOBILE APP / RAAST',
+      'SARDAR SAMIULLAH',
+      '0015010112560119',
+      'PK94MEZN0015010112560119',
+      '',
+      'Transfer to Meezan Bank via Raast or IBFT using IBAN PK94MEZN0015010112560119 and upload confirmation screenshot.',
+      'PKR 3,900',
+      1,
+      4
     );
 
     insertPM.run(
@@ -923,7 +938,7 @@ adminRouter.post('/payment-methods/reset-defaults', (_req, res) => {
       'Binance Pay ID: 243182889 (Nickname: Sami2026) or BEP20 USDT. Upload transfer hash/screenshot.',
       '$15 USDT',
       1,
-      4
+      5
     );
 
     insertPM.run(
@@ -938,7 +953,7 @@ adminRouter.post('/payment-methods/reset-defaults', (_req, res) => {
       'Best for students in UAE, KSA, UK, USA. Pay securely with card and upload receipt proof.',
       '$15 USD',
       1,
-      5
+      6
     );
 
     const methods = db.prepare('SELECT * FROM payment_methods ORDER BY display_order ASC, id ASC').all();

@@ -63,26 +63,21 @@ This guide explains how you (and your client) can **edit, add, delete, and toggl
 
 ---
 
-### 💳 Tab 3: Payment Accounts & Banks (`payment_accounts`)
-*Controls the 3-Step Checkout page (`/enrollment` and `/checkout`) payment details.*
+### 💳 Tab 3: Payment Accounts & Methods Manager (`payment_methods`)
+*Controls all payment methods displayed across the website and checkout page (`/enrollment`).*
 
-* **What you can change**:
-  1. **Easypaisa**:
-     - Account Title (e.g. `Sami Ur Rehman`)
-     - Mobile Account Number (e.g. `03315137294`)
-  2. **Meezan Bank**:
-     - Company Account Title (e.g. `ECOM WITH SAMI (PVT) LTD`)
-     - Account Number (e.g. `53020115677150`)
-     - IBAN Number (e.g. `PK27MEZN0053020115677150`)
-  3. **Binance & Crypto**:
-     - Binance Nickname (e.g. `Sami2026`)
-     - Binance Pay ID (e.g. `243182889`)
-     - USDT / BEP20 Wallet Address (e.g. `0xae8da71c3ad92406e69edc24219918ea58c00dac`)
-     - Network Name (e.g. `BSC / BNB Smart Chain (BEP20)`)
-  4. **International Card**:
-     - Whop / Stripe Checkout Link (e.g. `https://whop.com/checkout/...`)
-     - Fee in USD (e.g. `$15`)
-* **How to save**: Click **"Save Payment Accounts"**. Students immediately see the new account numbers with 1-click copy buttons.
+* **What you can do directly from CMS**:
+  1. **Add New Payment Methods**: Click **"+ Add Payment Method"** or use the quick-add buttons (Bank Account, Mobile Wallet, Crypto, Card Checkout).
+  2. **Edit Any Account**: Change Account Title, Mobile Number, Bank IBAN, Price Display, Badges, or Student Instructions.
+  3. **Show / Hide**: Click **"Hide from Website"** or **"Show on Website"** to instantly activate/deactivate any payment method.
+  4. **Delete**: Permanently remove unwanted payment methods with one click.
+  5. **Current Configured Accounts**:
+     - **Easypaisa**: Title: `SARDAR SAMIULLAH`, Number: `03481095933`
+     - **JazzCash**: Title: `SARDAR SAMIULLAH`, Number: `03481095933`
+     - **UPaisa**: Title: `SARDAR SAMIULLAH`, Number: `03481095933`
+     - **Meezan Bank**: Title: `SARDAR SAMIULLAH`, Account: `0015010112560119`, IBAN: `PK94MEZN0015010112560119`
+     - **Binance Crypto**: Sami2026 / 243182889 / BEP20 Wallet
+     - **International Card**: Online Checkout URL
 
 ---
 
