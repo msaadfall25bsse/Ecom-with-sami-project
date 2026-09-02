@@ -243,4 +243,22 @@ publicRouter.get('/blogs/:slug', (req, res) => {
   }
 });
 
+// Public: FAQs & Student Reviews
+publicRouter.get('/faq-reviews', (_req, res) => {
+  try {
+    const reviews = db.prepare('SELECT * FROM site_reviews WHERE is_featured = 1 ORDER BY sort_order ASC, id ASC').all();
+    const faqsSection = db.prepare("SELECT content_json FROM cms_sections WHERE section_key = 'faqs'").get() as any;
+    let faqs = [];
+    if (faqsSection) {
+      try {
+        const parsed = JSON.parse(faqsSection.content_json);
+        faqs = parsed.items || [];
+      } catch (e) {}
+    }
+    return res.json({ success: true, reviews, faqs });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 

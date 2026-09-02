@@ -1117,4 +1117,15 @@ function seedCmsData() {
 
     console.log('💳 Default Dynamic Payment Methods Seeded.');
   }
+
+  // Seed Default Student Account
+  const studentCount = db.prepare("SELECT count(*) as count FROM users WHERE role = 'student'").get() as { count: number };
+  if (studentCount.count === 0) {
+    const studentPasswordHash = bcrypt.hashSync('student123', 10);
+    db.prepare(`
+      INSERT INTO users (name, email, phone, city, password, access_code, role, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'student', 'active')
+    `).run('Muhammad Hamza', 'student@ecomwithsami.com', '03001234567', 'Lahore', studentPasswordHash, 'SAMI123456');
+    console.log('🎓 Default Active Student Seeded (student@ecomwithsami.com / SAMI123456).');
+  }
 }

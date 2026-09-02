@@ -104,7 +104,7 @@ adminRouter.get('/overview', (_req: AuthRequest, res) => {
 });
 
 // 2. Enrollment Requests List & Filter
-adminRouter.get('/enrollment-requests', (req, res) => {
+const handleGetEnrollments = (req: any, res: any) => {
   try {
     const { status, search } = req.query;
     let query = 'SELECT * FROM enrollment_requests WHERE 1=1';
@@ -128,10 +128,13 @@ adminRouter.get('/enrollment-requests', (req, res) => {
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   }
-});
+};
+
+adminRouter.get('/enrollment-requests', handleGetEnrollments);
+adminRouter.get('/enrollments', handleGetEnrollments);
 
 // 3. Update Enrollment Status (Approve / Reject / On Hold)
-adminRouter.put('/enrollment-requests/:id/status', async (req: AuthRequest, res) => {
+const handleUpdateEnrollmentStatus = async (req: AuthRequest, res: any) => {
   try {
     const { id } = req.params;
     const { status, adminNote } = req.body; // 'approved', 'rejected', 'on_hold'
@@ -218,7 +221,12 @@ adminRouter.put('/enrollment-requests/:id/status', async (req: AuthRequest, res)
     console.error('Error updating enrollment status:', err);
     return res.status(500).json({ success: false, message: err.message });
   }
-});
+};
+
+adminRouter.put('/enrollment-requests/:id/status', handleUpdateEnrollmentStatus);
+adminRouter.patch('/enrollment-requests/:id/status', handleUpdateEnrollmentStatus);
+adminRouter.put('/enrollments/:id/status', handleUpdateEnrollmentStatus);
+adminRouter.patch('/enrollments/:id/status', handleUpdateEnrollmentStatus);
 
 // 3B. Resend Access Code Email to Approved Student
 adminRouter.post('/enrollment-requests/:id/resend-access', async (req: AuthRequest, res) => {

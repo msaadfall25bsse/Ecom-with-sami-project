@@ -11,7 +11,7 @@ adminCurriculumRouter.use(requireAdmin);
  * 1. GET /api/admin/curriculum
  * Fetch entire course curriculum with modules & lessons
  */
-adminCurriculumRouter.get('/', (_req: Request, res: Response) => {
+const handleGetCurriculum = (_req: Request, res: Response) => {
   try {
     const modules = db.prepare('SELECT * FROM modules ORDER BY sort_order ASC').all() as any[];
 
@@ -42,7 +42,10 @@ adminCurriculumRouter.get('/', (_req: Request, res: Response) => {
     console.error('Error fetching admin curriculum:', err);
     return res.status(500).json({ success: false, message: err.message });
   }
-});
+};
+
+adminCurriculumRouter.get('/', handleGetCurriculum);
+adminCurriculumRouter.get('/modules', handleGetCurriculum);
 
 /**
  * 2. POST /api/admin/modules

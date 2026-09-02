@@ -395,3 +395,127 @@ lmsRouter.post('/security-strike', (req: AuthRequest, res: Response) => {
   }
 });
 
+/**
+ * 6. GET /api/lms/resources
+ * Return course downloads, templates, calculators & attachments
+ */
+lmsRouter.get('/resources', (_req: AuthRequest, res: Response) => {
+  try {
+    const whatsappGroupUrl = getSetting('whatsapp_group_link', 'https://chat.whatsapp.com/sami-mentorship-mastermind');
+    const downloads = [
+      {
+        id: 'dl-1',
+        title: 'VIP Dropshipping Profit Margin & Cash Flow Calculator',
+        type: 'Excel Spreadsheet (.xlsx)',
+        size: '1.4 MB',
+        icon: 'Calculator',
+        url: '/downloads/dropshipping-pl-calculator.xlsx'
+      },
+      {
+        id: 'dl-2',
+        title: 'Zero to Hero Facebook & TikTok Ads Blueprint (2026 Edition)',
+        type: 'E-Book (PDF)',
+        size: '8.2 MB',
+        icon: 'BookOpen',
+        url: '/downloads/fb-tiktok-ads-guide.pdf'
+      },
+      {
+        id: 'dl-3',
+        title: 'Verified UAE & KSA Local Courier & Supplier Directory',
+        type: 'Resource Guide (PDF)',
+        size: '3.1 MB',
+        icon: 'FileText',
+        url: '/downloads/uae-ksa-suppliers-directory.pdf'
+      }
+    ];
+
+    return res.json({
+      success: true,
+      downloads,
+      whatsappGroupUrl
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * 7. GET /api/lms/progress
+ * Return user completion stats & list of completed lesson IDs
+ */
+lmsRouter.get('/progress', (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const completedRows = db.prepare('SELECT lesson_id, completed_at FROM user_progress WHERE user_id = ?').all(userId) as any[];
+    const totalLessons = (db.prepare('SELECT count(*) as total FROM lessons').get() as any).total || 36;
+    const progressPercentage = Math.min(100, Math.round((completedRows.length / totalLessons) * 100));
+
+    return res.json({
+      success: true,
+      completedLessons: completedRows.map(r => r.lesson_id),
+      stats: {
+        totalLessons,
+        completedCount: completedRows.length,
+        progressPercentage
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * 8. GET /api/lms/security-status
+ * Return watermark and piracy protection configuration
+ */
+lmsRouter.get('/security-status', (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const student = db.prepare('SELECT id, name, email, security_strikes, status FROM users WHERE id = ?').get(userId) as any;
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || req.ip || '127.0.0.1').replace('::ffff:', '');
+
+    return res.json({
+      success: true,
+      strikes: student?.security_strikes || 0,
+      isSuspended: student?.status === 'suspended' || (student?.security_strikes || 0) >= 3,
+      watermark: {
+        name: student?.name || 'Student',
+        email: student?.email || 'student@ecomwithsami.com',
+        ip: clientIp
+      },
+      watermarkEnabled: getSetting('lms_watermark_enabled', '1') === '1',
+      devtoolsBlockEnabled: getSetting('lms_devtools_block_enabled', '1') === '1'
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * 9. GET /api/lms/stream/:id
+ * Stream helper alias for video playback
+ */
+lmsRouter.get('/stream/:id', (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    let lesson = db.prepare('SELECT * FROM lessons WHERE id = ?').get(id) as any;
+    if (!lesson) {
+      lesson = db.prepare('SELECT * FROM lessons LIMIT 1').get() as any;
+    }
+    if (!lesson) {
+      return res.status(404).json({ success: false, message: 'No lessons found' });
+    }
+    return res.json({
+      success: true,
+      lessonId: lesson.id,
+      title: lesson.title,
+      videoType: lesson.video_type || 'bunny',
+      bunnyVideoId: lesson.bunny_video_id || '',
+      streamUrl: lesson.bunny_video_id ? `https://iframe.mediadelivery.net/embed/416410/${lesson.bunny_video_id}` : ''
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+
