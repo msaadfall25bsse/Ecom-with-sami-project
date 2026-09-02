@@ -324,6 +324,142 @@ $defaultPaymentMethods = [
     ]
 ];
 
+// Self-healing MySQL schema auto-migration & seed helper
+function ensureDatabaseSchema($pdo, $defaultModulesSeed, $defaultPaymentMethods) {
+    if (!$pdo) return;
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                phone VARCHAR(50) NULL,
+                city VARCHAR(100) NULL,
+                password VARCHAR(255) NOT NULL,
+                access_code VARCHAR(50) NULL,
+                role ENUM('admin', 'student') DEFAULT 'student',
+                status ENUM('active', 'suspended', 'banned') DEFAULT 'active',
+                security_strikes INT DEFAULT 0,
+                suspended_reason TEXT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS modules (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                course_id INT DEFAULT 1,
+                module_number VARCHAR(20) NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                description TEXT NULL,
+                sort_order INT DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS lessons (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                module_id INT NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                description TEXT NULL,
+                video_type VARCHAR(50) DEFAULT 'bunny',
+                bunny_video_id VARCHAR(255) NULL,
+                vdocipher_id VARCHAR(255) NULL,
+                video_url TEXT NULL,
+                duration VARCHAR(50) DEFAULT '15:00',
+                notes TEXT NULL,
+                sort_order INT DEFAULT 1,
+                is_preview TINYINT(1) DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS enrollment_requests (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                enrollment_id VARCHAR(50) UNIQUE NOT NULL,
+                first_name VARCHAR(100) NOT NULL,
+                last_name VARCHAR(100) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                phone VARCHAR(50) NOT NULL,
+                city VARCHAR(100) NULL,
+                payment_method VARCHAR(50) NOT NULL,
+                amount DECIMAL(10,2) DEFAULT 3900.00,
+                screenshot_path TEXT NULL,
+                status ENUM('pending', 'approved', 'rejected', 'on_hold') DEFAULT 'pending',
+                admin_note TEXT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS security_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NULL,
+                event_type VARCHAR(50) NOT NULL,
+                strike_count INT DEFAULT 1,
+                ip_address VARCHAR(100) NULL,
+                user_agent TEXT NULL,
+                details TEXT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS payment_methods (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                method_key VARCHAR(50) UNIQUE NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                category VARCHAR(50) DEFAULT 'wallet',
+                badge VARCHAR(100) NULL,
+                account_title VARCHAR(255) NOT NULL,
+                account_number VARCHAR(100) NULL,
+                iban_or_wallet VARCHAR(255) NULL,
+                checkout_url TEXT NULL,
+                instructions TEXT NULL,
+                price_display VARCHAR(50) DEFAULT 'PKR 3,900',
+                is_active TINYINT(1) DEFAULT 1,
+                display_order INT DEFAULT 1
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS tracking_pixels (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                platform_name VARCHAR(100) NOT NULL,
+                pixel_id VARCHAR(100) NOT NULL,
+                custom_code TEXT NULL,
+                placement VARCHAR(50) DEFAULT 'head',
+                is_active TINYINT(1) DEFAULT 1
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+
+        // Seed default admin if missing
+        $adminCheck = $pdo->query("SELECT id FROM users WHERE email = 'sami@ecomwithsami.com' LIMIT 1");
+        if ($adminCheck && !$adminCheck->fetch()) {
+            $hashed = password_hash('SamiMaster@2026', PASSWORD_BCRYPT);
+            $pdo->prepare("INSERT INTO users (name, email, password, role, status) VALUES ('Sami Ur Rehman', 'sami@ecomwithsami.com', ?, 'admin', 'active')")->execute([$hashed]);
+        }
+
+        // Seed default payment methods if empty
+        $pmCount = $pdo->query("SELECT count(*) as count FROM payment_methods")->fetch();
+        if ($pmCount && (int)$pmCount['count'] === 0) {
+            foreach ($defaultPaymentMethods as $pm) {
+                $pdo->prepare("INSERT INTO payment_methods (method_key, title, category, badge, account_title, account_number, iban_or_wallet, checkout_url, instructions, price_display, is_active, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")->execute([
+                    $pm['method_key'], $pm['title'], $pm['category'], $pm['badge'], $pm['account_title'], $pm['account_number'], $pm['iban_or_wallet'], $pm['checkout_url'], $pm['instructions'], $pm['price_display'], $pm['is_active'], $pm['display_order']
+                ]);
+            }
+        }
+
+        // Seed default modules if empty
+        $mCount = $pdo->query("SELECT count(*) as count FROM modules")->fetch();
+        if ($mCount && (int)$mCount['count'] === 0) {
+            foreach ($defaultModulesSeed as $mod) {
+                $stmt = $pdo->prepare("INSERT INTO modules (course_id, module_number, title, description, sort_order) VALUES (1, ?, ?, ?, ?)");
+                $stmt->execute([$mod['module_number'], $mod['title'], $mod['description'], $mod['sort_order']]);
+                $modId = (int)$pdo->lastInsertId();
+                foreach ($mod['lessons'] as $les) {
+                    $pdo->prepare("INSERT INTO lessons (module_id, title, duration, video_type, bunny_video_id, vdocipher_id, notes, sort_order, is_preview) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")->execute([
+                        $modId, $les['title'], $les['duration'], $les['video_type'] ?? 'bunny', $les['bunny_video_id'] ?? '', $les['vdocipher_id'] ?? '', $les['notes'] ?? '', $les['sort_order'], $les['is_preview'] ?? 0
+                    ]);
+                }
+            }
+        }
+    } catch (Exception $e) {}
+}
+
+// Auto-run schema check
+ensureDatabaseSchema($pdo, $defaultModulesSeed, $defaultPaymentMethods);
+
 // ==========================================
 // 1. PUBLIC STOREFRONT APIS
 // ==========================================
