@@ -363,29 +363,295 @@ cmsRouter.delete('/blogs/:id', requireAdmin, (req: Request, res: Response) => {
 });
 
 /* ==========================================================
-   4. MEDIA FILE UPLOADER ENDPOINT
+   5. PAYMENT METHODS & RECEIVING ACCOUNTS CRUD
    ========================================================== */
 
 /**
- * POST /api/admin/cms/upload
- * Upload media assets (images, badges, video thumbnails)
+ * GET /api/admin/cms/payment-methods
  */
-cmsRouter.post('/upload', requireAdmin, upload.single('mediaFile'), (req: Request, res: Response) => {
+cmsRouter.get('/payment-methods', requireAdmin, (_req: Request, res: Response) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    const methods = db.prepare(`
+      SELECT id, method_key, title, category, badge, account_title, account_number, iban_or_wallet, checkout_url, instructions, price_display, is_active, display_order, created_at, updated_at
+      FROM payment_methods
+      ORDER BY display_order ASC, id ASC
+    `).all();
+    return res.json({ success: true, methods });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * POST /api/admin/cms/payment-methods
+ */
+cmsRouter.post('/payment-methods', requireAdmin, (req: Request, res: Response) => {
+  try {
+    const {
+      title,
+      category = 'bank',
+      badge = '',
+      account_title = '',
+      account_number = '',
+      iban_or_wallet = '',
+      checkout_url = '',
+      instructions = '',
+      price_display = 'PKR 3,900',
+      is_active = 1,
+      display_order = 0
+    } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ success: false, message: 'Payment method title is required' });
     }
 
-    const publicUrl = `/uploads/cms/${req.file.filename}`;
+    const baseKey = title.trim().toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 30);
+    const method_key = `${baseKey}_${Date.now().toString().slice(-4)}`;
+
+    const stmt = db.prepare(`
+      INSERT INTO payment_methods (
+        method_key, title, category, badge, account_title, account_number, iban_or_wallet, checkout_url, instructions, price_display, is_active, display_order, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATETIME('now'))
+    `);
+
+    const result = stmt.run(
+      method_key,
+      title.trim(),
+      category,
+      badge.trim(),
+      account_title.trim(),
+      account_number.trim(),
+      iban_or_wallet.trim(),
+      checkout_url.trim(),
+      instructions.trim(),
+      price_display.trim() || 'PKR 3,900',
+      is_active ? 1 : 0,
+      Number(display_order) || 0
+    );
+
+    const newMethod = db.prepare('SELECT * FROM payment_methods WHERE id = ?').get(result.lastInsertRowid);
+    return res.json({ success: true, message: 'Payment method created successfully', method: newMethod });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * PUT /api/admin/cms/payment-methods/:id
+ */
+cmsRouter.put('/payment-methods/:id', requireAdmin, (req: Request, res: Response) => {
+  try {
+    const numId = Number(req.params.id);
+    const {
+      title,
+      category = 'bank',
+      badge = '',
+      account_title = '',
+      account_number = '',
+      iban_or_wallet = '',
+      checkout_url = '',
+      instructions = '',
+      price_display = 'PKR 3,900',
+      is_active = 1,
+      display_order = 0
+    } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ success: false, message: 'Payment method title is required' });
+    }
+
+    const exists = db.prepare('SELECT id FROM payment_methods WHERE id = ?').get(numId);
+    if (!exists) {
+      return res.status(404).json({ success: false, message: 'Payment method not found in database' });
+    }
+
+    const stmt = db.prepare(`
+      UPDATE payment_methods SET
+        title = ?,
+        category = ?,
+        badge = ?,
+        account_title = ?,
+        account_number = ?,
+        iban_or_wallet = ?,
+        checkout_url = ?,
+        instructions = ?,
+        price_display = ?,
+        is_active = ?,
+        display_order = ?,
+        updated_at = DATETIME('now')
+      WHERE id = ?
+    `);
+
+    stmt.run(
+      title.trim(),
+      category,
+      badge.trim(),
+      account_title.trim(),
+      account_number.trim(),
+      iban_or_wallet.trim(),
+      checkout_url.trim(),
+      instructions.trim(),
+      price_display.trim() || 'PKR 3,900',
+      is_active ? 1 : 0,
+      Number(display_order) || 0,
+      numId
+    );
+
+    const updated = db.prepare('SELECT * FROM payment_methods WHERE id = ?').get(numId);
+    return res.json({ success: true, message: 'Payment method updated successfully', method: updated });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * PATCH /api/admin/cms/payment-methods/:id/toggle
+ */
+cmsRouter.patch('/payment-methods/:id/toggle', requireAdmin, (req: Request, res: Response) => {
+  try {
+    const numId = Number(req.params.id);
+    const method = db.prepare('SELECT id, is_active, title FROM payment_methods WHERE id = ?').get(numId) as any;
+    if (!method) {
+      return res.status(404).json({ success: false, message: 'Payment method not found' });
+    }
+
+    const newStatus = method.is_active === 1 ? 0 : 1;
+    db.prepare("UPDATE payment_methods SET is_active = ?, updated_at = DATETIME('now') WHERE id = ?").run(newStatus, numId);
+
     return res.json({
       success: true,
-      message: 'File uploaded successfully!',
-      url: publicUrl,
-      filename: req.file.filename,
-      size: req.file.size
+      is_active: newStatus,
+      message: `${method.title} is now ${newStatus === 1 ? 'ACTIVE (visible on website)' : 'DISABLED (hidden from website)'}`
     });
-  } catch (error: any) {
-    console.error('Error uploading CMS media:', error);
-    return res.status(500).json({ success: false, message: 'File upload failed' });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * DELETE /api/admin/cms/payment-methods/:id
+ */
+cmsRouter.delete('/payment-methods/:id', requireAdmin, (req: Request, res: Response) => {
+  try {
+    const numId = Number(req.params.id);
+    const method = db.prepare('SELECT id, title FROM payment_methods WHERE id = ?').get(numId) as any;
+    if (!method) {
+      return res.status(404).json({ success: false, message: 'Payment method not found' });
+    }
+
+    db.prepare('DELETE FROM payment_methods WHERE id = ?').run(numId);
+    return res.json({ success: true, message: `Payment method "${method.title}" deleted successfully` });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * POST /api/admin/cms/payment-methods/reset-defaults
+ */
+cmsRouter.post('/payment-methods/reset-defaults', requireAdmin, (_req: Request, res: Response) => {
+  try {
+    db.prepare('DELETE FROM payment_methods').run();
+
+    const insertPM = db.prepare(`
+      INSERT INTO payment_methods (
+        method_key, title, category, badge, account_title, account_number, iban_or_wallet, checkout_url, instructions, price_display, is_active, display_order
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    insertPM.run(
+      'easypaisa',
+      'Easypaisa Mobile Wallet',
+      'wallet',
+      'RECOMMENDED & FASTEST',
+      'SARDAR SAMIULLAH',
+      '03481095933',
+      '',
+      '',
+      'Send course fee via Easypaisa Mobile App or USSD code and upload the transaction screenshot.',
+      'PKR 3,900',
+      1,
+      1
+    );
+
+    insertPM.run(
+      'jazzcash',
+      'JazzCash Account',
+      'wallet',
+      'INSTANT MOBILE TRANSFER',
+      'SARDAR SAMIULLAH',
+      '03481095933',
+      '',
+      '',
+      'Send course fee to JazzCash account and attach proof below.',
+      'PKR 3,900',
+      1,
+      2
+    );
+
+    insertPM.run(
+      'upaisa',
+      'UPaisa Mobile Wallet',
+      'wallet',
+      'MOBILE TRANSFER',
+      'SARDAR SAMIULLAH',
+      '03481095933',
+      '',
+      '',
+      'Send course fee via UPaisa app/agent and upload transaction proof.',
+      'PKR 3,900',
+      1,
+      3
+    );
+
+    insertPM.run(
+      'meezan_bank',
+      'Meezan Bank Transfer',
+      'bank',
+      'DIRECT IBFT / RAASM',
+      'SARDAR SAMIULLAH',
+      '0015010112560119',
+      'PK94MEZN0015010112560119',
+      '',
+      'Transfer to Meezan Bank via Raast ID / IBFT and upload confirmation screenshot.',
+      'PKR 3,900',
+      1,
+      4
+    );
+
+    insertPM.run(
+      'binance_crypto',
+      'Binance Pay & USDT (Crypto)',
+      'crypto',
+      'CRYPTO / ZERO FEE',
+      'Sami2026',
+      '243182889',
+      '0xae8da71c3ad92406e69edc24219918ea58c00dac',
+      '',
+      'Send $15 USDT via Binance Pay ID or BSC / BEP20 Wallet network and attach payment proof.',
+      '$15 USDT',
+      1,
+      5
+    );
+
+    insertPM.run(
+      'international_card',
+      'Visa / Mastercard Card Checkout',
+      'card',
+      'OVERSEAS & INTERNATIONAL',
+      'Online Card Checkout',
+      '',
+      '',
+      'https://whop.com/checkout/plan_0vX2Q4Zz9kK1Z?d2c=true',
+      'Overseas & International students can pay directly using any Visa, Mastercard, Apple Pay, or Google Pay.',
+      '$15 USD',
+      1,
+      6
+    );
+
+    const methods = db.prepare('SELECT * FROM payment_methods ORDER BY display_order ASC, id ASC').all();
+    return res.json({ success: true, message: 'Default payment methods restored successfully', methods });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
   }
 });

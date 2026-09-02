@@ -142,9 +142,14 @@ export default function AdminCmsPage() {
     setPmLoading(true);
     try {
       const token = localStorage.getItem('sami_admin_token');
-      const res = await fetch('/api/admin/payment-methods', {
+      let res = await fetch('/api/admin/cms/payment-methods', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!res.ok) {
+        res = await fetch('/api/admin/payment-methods', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
       if (res.ok) {
         const data = await res.json();
         if (data.success) {
@@ -165,10 +170,16 @@ export default function AdminCmsPage() {
         alert('Admin session not found. Please log in again.');
         return;
       }
-      const res = await fetch(`/api/admin/payment-methods/${id}/toggle`, {
+      let res = await fetch(`/api/admin/cms/payment-methods/${id}/toggle`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!res.ok) {
+        res = await fetch(`/api/admin/payment-methods/${id}/toggle`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
       const data = await res.json();
       if (data.success) {
         showToast(data.message || 'Payment method status updated');
@@ -191,10 +202,16 @@ export default function AdminCmsPage() {
         alert('Admin session not found. Please log in again.');
         return;
       }
-      const res = await fetch(`/api/admin/payment-methods/${id}`, {
+      let res = await fetch(`/api/admin/cms/payment-methods/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!res.ok) {
+        res = await fetch(`/api/admin/payment-methods/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
       const data = await res.json();
       if (data.success) {
         showToast(`🗑️ ${title} deleted successfully`);
@@ -222,10 +239,11 @@ export default function AdminCmsPage() {
         return;
       }
 
-      const url = pmEditing ? `/api/admin/payment-methods/${pmEditing.id}` : '/api/admin/payment-methods';
+      const cmsUrl = pmEditing ? `/api/admin/cms/payment-methods/${pmEditing.id}` : '/api/admin/cms/payment-methods';
+      const adminUrl = pmEditing ? `/api/admin/payment-methods/${pmEditing.id}` : '/api/admin/payment-methods';
       const method = pmEditing ? 'PUT' : 'POST';
 
-      const res = await fetch(url, {
+      let res = await fetch(cmsUrl, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -233,6 +251,17 @@ export default function AdminCmsPage() {
         },
         body: JSON.stringify(pmForm)
       });
+
+      if (!res.ok && (res.status === 404 || res.status === 500)) {
+        res = await fetch(adminUrl, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(pmForm)
+        });
+      }
 
       if (res.status === 401 || res.status === 403) {
         alert('Admin authentication failed (401/403). Please log out and log in again.');
@@ -272,10 +301,16 @@ export default function AdminCmsPage() {
         alert('Admin session not found. Please log in again.');
         return;
       }
-      const res = await fetch('/api/admin/payment-methods/reset-defaults', {
+      let res = await fetch('/api/admin/cms/payment-methods/reset-defaults', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!res.ok) {
+        res = await fetch('/api/admin/payment-methods/reset-defaults', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
       const data = await res.json();
       if (data.success) {
         showToast('✅ Default payment methods restored successfully!');
