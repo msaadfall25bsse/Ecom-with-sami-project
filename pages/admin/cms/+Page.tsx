@@ -150,6 +150,9 @@ export default function AdminCmsPage() {
           headers: { 'Authorization': `Bearer ${token}` }
         });
       }
+      if (!res.ok) {
+        res = await fetch('/api/public/payment-methods');
+      }
       if (res.ok) {
         const data = await res.json();
         if (data.success) {
@@ -263,6 +266,55 @@ export default function AdminCmsPage() {
         });
       }
 
+      // Tier 3 fallback: If custom routes return 404, fallback to updating the payment_accounts section
+      if (!res.ok && res.status === 404) {
+        const currSec = sections['payment_accounts']?.content || {};
+        const titleLower = pmForm.title.toLowerCase();
+        const isMeezan = pmForm.category === 'bank' || titleLower.includes('meezan') || titleLower.includes('bank');
+        const isEasypaisa = titleLower.includes('easypaisa');
+        const isJazzcash = titleLower.includes('jazzcash');
+        const isUpaisa = titleLower.includes('upaisa');
+        const isCrypto = pmForm.category === 'crypto' || titleLower.includes('crypto') || titleLower.includes('binance');
+        const isCard = pmForm.category === 'card' || titleLower.includes('card');
+
+        const updatedContent = { ...currSec };
+        if (isEasypaisa) {
+          updatedContent.easypaisa = { title: pmForm.account_title, number: pmForm.account_number, badge: pmForm.badge || 'RECOMMENDED' };
+        } else if (isJazzcash) {
+          updatedContent.jazzcash = { title: pmForm.account_title, number: pmForm.account_number, badge: pmForm.badge || 'INSTANT' };
+        } else if (isUpaisa) {
+          updatedContent.upaisa = { title: pmForm.account_title, number: pmForm.account_number, badge: pmForm.badge || 'MOBILE' };
+        } else if (isMeezan) {
+          updatedContent.meezan = { title: pmForm.account_title, account: pmForm.account_number, iban: pmForm.iban_or_wallet, badge: pmForm.badge || 'DIRECT IBFT' };
+        } else if (isCrypto) {
+          updatedContent.crypto = { title: pmForm.account_title, payId: pmForm.account_number, wallet: pmForm.iban_or_wallet };
+        } else if (isCard) {
+          updatedContent.card = { url: pmForm.checkout_url };
+        }
+
+        res = await fetch('/api/admin/cms/sections/payment_accounts', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: 'Payment Accounts & Methods',
+            content: updatedContent,
+            is_visible: 1
+          })
+        });
+
+        if (res.ok) {
+          showToast(`✅ ${pmForm.title} saved & updated!`);
+          setPmModalOpen(false);
+          setPmEditing(null);
+          fetchPaymentMethods();
+          fetchCmsData();
+          return;
+        }
+      }
+
       if (res.status === 401 || res.status === 403) {
         alert('Admin authentication failed (401/403). Please log out and log in again.');
         window.location.href = '/login';
@@ -273,7 +325,7 @@ export default function AdminCmsPage() {
       try {
         data = await res.json();
       } catch (parseErr) {
-        throw new Error(`Server returned status ${res.status}. Please make sure your Node.js server on Hostinger has pulled the latest code and restarted.`);
+        throw new Error(`Server returned status ${res.status}.`);
       }
 
       if (data.success) {

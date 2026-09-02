@@ -108,6 +108,39 @@ cmsRouter.put('/sections/:key', requireAdmin, (req: Request, res: Response) => {
       `).run(title, contentJson, visibleVal, key);
     }
 
+    // Auto-sync payment_methods table if payment_accounts section is updated
+    if (key === 'payment_accounts') {
+      try {
+        const parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
+        if (parsedContent.easypaisa) {
+          db.prepare(`UPDATE payment_methods SET account_title = ?, account_number = ?, updated_at = DATETIME('now') WHERE method_key = 'easypaisa'`)
+            .run(parsedContent.easypaisa.title || '', parsedContent.easypaisa.number || '');
+        }
+        if (parsedContent.jazzcash) {
+          db.prepare(`UPDATE payment_methods SET account_title = ?, account_number = ?, updated_at = DATETIME('now') WHERE method_key = 'jazzcash'`)
+            .run(parsedContent.jazzcash.title || '', parsedContent.jazzcash.number || '');
+        }
+        if (parsedContent.upaisa) {
+          db.prepare(`UPDATE payment_methods SET account_title = ?, account_number = ?, updated_at = DATETIME('now') WHERE method_key = 'upaisa'`)
+            .run(parsedContent.upaisa.title || '', parsedContent.upaisa.number || '');
+        }
+        if (parsedContent.meezan) {
+          db.prepare(`UPDATE payment_methods SET account_title = ?, account_number = ?, iban_or_wallet = ?, updated_at = DATETIME('now') WHERE method_key = 'meezan_bank'`)
+            .run(parsedContent.meezan.title || '', parsedContent.meezan.account || '', parsedContent.meezan.iban || '');
+        }
+        if (parsedContent.crypto) {
+          db.prepare(`UPDATE payment_methods SET account_title = ?, account_number = ?, iban_or_wallet = ?, updated_at = DATETIME('now') WHERE method_key = 'binance_crypto'`)
+            .run(parsedContent.crypto.title || '', parsedContent.crypto.payId || '', parsedContent.crypto.wallet || '');
+        }
+        if (parsedContent.card) {
+          db.prepare(`UPDATE payment_methods SET checkout_url = ?, updated_at = DATETIME('now') WHERE method_key = 'international_card'`)
+            .run(parsedContent.card.url || '');
+        }
+      } catch (syncErr) {
+        console.warn('Sync payment_methods from cms_sections:', syncErr);
+      }
+    }
+
     return res.json({ success: true, message: `Section '${key}' updated successfully!` });
   } catch (error: any) {
     console.error('Error updating section:', error);
@@ -653,5 +686,33 @@ cmsRouter.post('/payment-methods/reset-defaults', requireAdmin, (_req: Request, 
     return res.json({ success: true, message: 'Default payment methods restored successfully', methods });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/* ==========================================================
+   6. MEDIA FILE UPLOADER ENDPOINT
+   ========================================================== */
+
+/**
+ * POST /api/admin/cms/upload
+ * Upload media assets (images, badges, video thumbnails)
+ */
+cmsRouter.post('/upload', requireAdmin, upload.single('mediaFile'), (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+
+    const publicUrl = `/uploads/cms/${req.file.filename}`;
+    return res.json({
+      success: true,
+      message: 'File uploaded successfully!',
+      url: publicUrl,
+      filename: req.file.filename,
+      size: req.file.size
+    });
+  } catch (error: any) {
+    console.error('Error uploading CMS media:', error);
+    return res.status(500).json({ success: false, message: 'File upload failed' });
   }
 });
