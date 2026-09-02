@@ -145,9 +145,11 @@ export default function AdminCmsPage() {
       const res = await fetch('/api/admin/payment-methods', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const data = await res.json();
-      if (data.success) {
-        setPaymentMethods(data.methods || []);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setPaymentMethods(data.methods || []);
+        }
       }
     } catch (err) {
       console.error('Error loading payment methods:', err);
@@ -159,6 +161,10 @@ export default function AdminCmsPage() {
   const handleTogglePM = async (id: number) => {
     try {
       const token = localStorage.getItem('sami_admin_token');
+      if (!token) {
+        alert('Admin session not found. Please log in again.');
+        return;
+      }
       const res = await fetch(`/api/admin/payment-methods/${id}/toggle`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}` }
@@ -170,8 +176,8 @@ export default function AdminCmsPage() {
       } else {
         alert(data.message || 'Failed to toggle status');
       }
-    } catch (err) {
-      alert('Error updating payment method status');
+    } catch (err: any) {
+      alert('Error updating payment method status: ' + (err?.message || 'Check network'));
     }
   };
 
@@ -181,6 +187,10 @@ export default function AdminCmsPage() {
     }
     try {
       const token = localStorage.getItem('sami_admin_token');
+      if (!token) {
+        alert('Admin session not found. Please log in again.');
+        return;
+      }
       const res = await fetch(`/api/admin/payment-methods/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
@@ -192,8 +202,8 @@ export default function AdminCmsPage() {
       } else {
         alert(data.message || 'Failed to delete payment method');
       }
-    } catch (err) {
-      alert('Error deleting payment method');
+    } catch (err: any) {
+      alert('Error deleting payment method: ' + (err?.message || 'Check network'));
     }
   };
 
@@ -206,6 +216,12 @@ export default function AdminCmsPage() {
     setPmActionLoading(true);
     try {
       const token = localStorage.getItem('sami_admin_token');
+      if (!token) {
+        alert('Admin session expired or not logged in. Please log in to Admin Panel again.');
+        window.location.href = '/login';
+        return;
+      }
+
       const url = pmEditing ? `/api/admin/payment-methods/${pmEditing.id}` : '/api/admin/payment-methods';
       const method = pmEditing ? 'PUT' : 'POST';
 
@@ -217,7 +233,20 @@ export default function AdminCmsPage() {
         },
         body: JSON.stringify(pmForm)
       });
-      const data = await res.json();
+
+      if (res.status === 401 || res.status === 403) {
+        alert('Admin authentication failed (401/403). Please log out and log in again.');
+        window.location.href = '/login';
+        return;
+      }
+
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        throw new Error(`Server returned status ${res.status}. Please make sure your Node.js server on Hostinger has pulled the latest code and restarted.`);
+      }
+
       if (data.success) {
         showToast(pmEditing ? `✅ ${pmForm.title} updated!` : `✅ ${pmForm.title} created!`);
         setPmModalOpen(false);
@@ -226,8 +255,8 @@ export default function AdminCmsPage() {
       } else {
         alert(data.message || 'Failed to save payment method');
       }
-    } catch (err) {
-      alert('Error saving payment method');
+    } catch (err: any) {
+      alert('Error saving payment method: ' + (err?.message || 'Please verify server connection.'));
     } finally {
       setPmActionLoading(false);
     }
@@ -239,6 +268,10 @@ export default function AdminCmsPage() {
     }
     try {
       const token = localStorage.getItem('sami_admin_token');
+      if (!token) {
+        alert('Admin session not found. Please log in again.');
+        return;
+      }
       const res = await fetch('/api/admin/payment-methods/reset-defaults', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
@@ -250,8 +283,8 @@ export default function AdminCmsPage() {
       } else {
         alert(data.message || 'Failed to restore default payment methods');
       }
-    } catch (err) {
-      alert('Error restoring defaults');
+    } catch (err: any) {
+      alert('Error restoring defaults: ' + (err?.message || 'Check network'));
     }
   };
 

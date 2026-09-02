@@ -758,7 +758,7 @@ adminRouter.post('/payment-methods', (req, res) => {
 
 adminRouter.put('/payment-methods/:id', (req, res) => {
   try {
-    const { id } = req.params;
+    const numId = Number(req.params.id);
     const {
       title,
       category = 'bank',
@@ -775,6 +775,11 @@ adminRouter.put('/payment-methods/:id', (req, res) => {
 
     if (!title || !title.trim()) {
       return res.status(400).json({ success: false, message: 'Payment method title is required' });
+    }
+
+    const exists = db.prepare('SELECT id FROM payment_methods WHERE id = ?').get(numId);
+    if (!exists) {
+      return res.status(404).json({ success: false, message: 'Payment method not found in database' });
     }
 
     const stmt = db.prepare(`
@@ -794,7 +799,7 @@ adminRouter.put('/payment-methods/:id', (req, res) => {
       WHERE id = ?
     `);
 
-    const result = stmt.run(
+    stmt.run(
       title.trim(),
       category,
       badge.trim(),
@@ -806,14 +811,10 @@ adminRouter.put('/payment-methods/:id', (req, res) => {
       price_display.trim() || 'PKR 3,900',
       is_active ? 1 : 0,
       Number(display_order) || 0,
-      id
+      numId
     );
 
-    if (result.changes === 0) {
-      return res.status(404).json({ success: false, message: 'Payment method not found' });
-    }
-
-    const updated = db.prepare('SELECT * FROM payment_methods WHERE id = ?').get(id);
+    const updated = db.prepare('SELECT * FROM payment_methods WHERE id = ?').get(numId);
     return res.json({ success: true, message: 'Payment method updated successfully', method: updated });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
@@ -822,14 +823,14 @@ adminRouter.put('/payment-methods/:id', (req, res) => {
 
 adminRouter.patch('/payment-methods/:id/toggle', (req, res) => {
   try {
-    const { id } = req.params;
-    const method = db.prepare('SELECT id, is_active, title FROM payment_methods WHERE id = ?').get(id) as any;
+    const numId = Number(req.params.id);
+    const method = db.prepare('SELECT id, is_active, title FROM payment_methods WHERE id = ?').get(numId) as any;
     if (!method) {
       return res.status(404).json({ success: false, message: 'Payment method not found' });
     }
 
     const newStatus = method.is_active === 1 ? 0 : 1;
-    db.prepare("UPDATE payment_methods SET is_active = ?, updated_at = DATETIME('now') WHERE id = ?").run(newStatus, id);
+    db.prepare("UPDATE payment_methods SET is_active = ?, updated_at = DATETIME('now') WHERE id = ?").run(newStatus, numId);
 
     return res.json({
       success: true,
@@ -843,13 +844,13 @@ adminRouter.patch('/payment-methods/:id/toggle', (req, res) => {
 
 adminRouter.delete('/payment-methods/:id', (req, res) => {
   try {
-    const { id } = req.params;
-    const method = db.prepare('SELECT id, title FROM payment_methods WHERE id = ?').get(id) as any;
+    const numId = Number(req.params.id);
+    const method = db.prepare('SELECT id, title FROM payment_methods WHERE id = ?').get(numId) as any;
     if (!method) {
       return res.status(404).json({ success: false, message: 'Payment method not found' });
     }
 
-    db.prepare('DELETE FROM payment_methods WHERE id = ?').run(id);
+    db.prepare('DELETE FROM payment_methods WHERE id = ?').run(numId);
     return res.json({ success: true, message: `Payment method "${method.title}" deleted successfully` });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
