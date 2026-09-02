@@ -178,12 +178,13 @@ export const LmsSecurityGuard: React.FC<LmsSecurityGuardProps> = ({
       }
     };
 
-    // 5. DevTools Window Docking Check
+    // 5. DevTools Window Docking Check (Desktop Only, never trigger on mobile/tablet)
     const checkDevTools = () => {
-      const threshold = 160;
+      if (typeof window === 'undefined' || window.innerWidth < 1024) return;
+      const threshold = 200;
       const widthDiff = window.outerWidth - window.innerWidth > threshold;
       const heightDiff = window.outerHeight - window.innerHeight > threshold;
-      if (widthDiff || heightDiff) {
+      if (widthDiff && heightDiff) {
         triggerViolation('devtools', 'Developer Tools docked window detected');
       }
     };
