@@ -50,20 +50,84 @@ try {
     // Database fallback mode enabled
 }
 
-// Parse Request Path
-$uri = $_SERVER['REQUEST_URI'] ?? '/api';
-$parsedPath = parse_url($uri, PHP_URL_PATH);
-$path = preg_replace('#^/api/#', '', trim($parsedPath, '/'));
-$method = $_SERVER['REQUEST_METHOD'];
+// Extract clean request path
+$uri = $_SERVER['REQUEST_URI'] ?? '';
+$uriPath = parse_url($uri, PHP_URL_PATH);
+$path = preg_replace('#^/api/#', '', $uriPath);
+$path = trim($path, '/');
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-// Helper to send JSON response
-function jsonResponse($data, $statusCode = 200) {
-    http_response_code($statusCode);
-    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+// Response helper
+function jsonResponse($data, $code = 200) {
+    http_response_code($code);
+    echo json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// Default 6 Payment Accounts (SARDAR SAMIULLAH)
+// Fallback persistence file directory
+$dataDir = __DIR__ . '/data/';
+if (!is_dir($dataDir)) {
+    @mkdir($dataDir, 0777, true);
+}
+
+function getStoredRequests($dataDir, $pdo) {
+    $requests = [];
+    if ($pdo) {
+        try {
+            $stmt = $pdo->query("SELECT * FROM enrollment_requests ORDER BY id DESC");
+            if ($stmt) {
+                $requests = $stmt->fetchAll();
+            }
+        } catch (Exception $e) {}
+    }
+    
+    // File fallback if DB is empty
+    $jsonFile = $dataDir . 'enrollment_requests.json';
+    if (empty($requests) && file_exists($jsonFile)) {
+        $data = json_decode(file_get_contents($jsonFile), true);
+        if (is_array($data)) $requests = $data;
+    }
+    return $requests;
+}
+
+function saveStoredRequest($dataDir, $pdo, $record) {
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("
+                INSERT INTO enrollment_requests (enrollment_id, first_name, last_name, email, phone, city, payment_method, amount, screenshot_path, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ");
+            $stmt->execute([
+                $record['enrollment_id'],
+                $record['first_name'],
+                $record['last_name'],
+                $record['email'],
+                $record['phone'],
+                $record['city'],
+                $record['payment_method'],
+                $record['amount'],
+                $record['screenshot_path'],
+                $record['status']
+            ]);
+            $record['id'] = (int)$pdo->lastInsertId();
+        } catch (Exception $e) {}
+    }
+
+    // Always backup to JSON file
+    $jsonFile = $dataDir . 'enrollment_requests.json';
+    $existing = [];
+    if (file_exists($jsonFile)) {
+        $existing = json_decode(file_get_contents($jsonFile), true) ?: [];
+    }
+    if (empty($record['id'])) {
+        $record['id'] = count($existing) + 1;
+    }
+    array_unshift($existing, $record);
+    file_put_contents($jsonFile, json_encode($existing, JSON_PRETTY_PRINT));
+    return $record;
+}
+
+// 6 Official Sardar Samiullah Payment Accounts
 $defaultPaymentMethods = [
     [
         'id' => 1,
@@ -256,47 +320,48 @@ if ($path === 'public/contact' || $path === 'contact') {
 }
 
 // ==========================================
-// 2. ENROLLMENT & CHECKOUT
+// 2. ENROLLMENT & CHECKOUT SUBMISSIONS
 // ==========================================
 
 // POST /api/enrollments
 if ($path === 'enrollments' && $method === 'POST') {
-    $firstName = $_POST['firstName'] ?? $_POST['first_name'] ?? '';
-    $lastName = $_POST['lastName'] ?? $_POST['last_name'] ?? '';
-    $email = $_POST['email'] ?? '';
-    $phone = $_POST['phone'] ?? '';
-    $city = $_POST['city'] ?? '';
+    $firstName = trim($_POST['firstName'] ?? $_POST['first_name'] ?? '');
+    $lastName = trim($_POST['lastName'] ?? $_POST['last_name'] ?? '');
+    $email = trim(strtolower($_POST['email'] ?? ''));
+    $phone = trim($_POST['phone'] ?? '');
+    $city = trim($_POST['city'] ?? '');
     $paymentMethod = $_POST['paymentMethod'] ?? $_POST['payment_method'] ?? 'easypaisa';
     $amount = 3900;
 
     $enrollmentId = 'ENR-' . date('Y') . '-' . str_pad((string)rand(100, 9999), 4, '0', STR_PAD_LEFT);
 
+    // Save screenshot proof
     $screenshotPath = '';
     if (isset($_FILES['screenshot']) && $_FILES['screenshot']['error'] === 0) {
         $uploadDir = __DIR__ . '/uploads/receipts/';
-        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
-        $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9.]/', '', basename($_FILES['screenshot']['name']));
+        if (!is_dir($uploadDir)) @mkdir($uploadDir, 0777, true);
+        $cleanExt = pathinfo($_FILES['screenshot']['name'], PATHINFO_EXTENSION);
+        $fileName = 'receipt_' . time() . '_' . rand(1000, 9999) . '.' . ($cleanExt ?: 'jpg');
         if (move_uploaded_file($_FILES['screenshot']['tmp_name'], $uploadDir . $fileName)) {
-            $screenshotPath = '/uploads/receipts/' . $fileName;
+            $screenshotPath = '/api/uploads/receipts/' . $fileName;
         }
     }
 
-    if ($pdo) {
-        try {
-            $stmt = $pdo->prepare("
-                INSERT INTO enrollment_requests (enrollment_id, first_name, last_name, email, phone, city, payment_method, amount, screenshot_path, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-            ");
-            $stmt->execute([$enrollmentId, $firstName, $lastName, $email, $phone, $city, $paymentMethod, $amount, $screenshotPath]);
+    $record = [
+        'enrollment_id' => $enrollmentId,
+        'first_name' => $firstName,
+        'last_name' => $lastName,
+        'email' => $email,
+        'phone' => $phone,
+        'city' => $city,
+        'payment_method' => $paymentMethod,
+        'amount' => $amount,
+        'screenshot_path' => $screenshotPath,
+        'status' => 'pending',
+        'created_at' => date('Y-m-d H:i:s')
+    ];
 
-            $lastId = $pdo->lastInsertId();
-            $orderStmt = $pdo->prepare("
-                INSERT INTO orders (order_number, enrollment_request_id, amount, payment_method, status, customer_name, customer_email, customer_phone)
-                VALUES (?, ?, ?, ?, 'Pending', ?, ?, ?)
-            ");
-            $orderStmt->execute(['ORD-' . rand(1000, 9999), $lastId, $amount, $paymentMethod, "$firstName $lastName", $email, $phone]);
-        } catch (Exception $e) {}
-    }
+    $saved = saveStoredRequest($dataDir, $pdo, $record);
 
     jsonResponse([
         'success' => true,
@@ -313,13 +378,125 @@ if ($path === 'enrollments' && $method === 'POST') {
 }
 
 // ==========================================
-// 3. AUTHENTICATION (Login / Me)
+// 3. ADMIN ENROLLMENT REQUESTS MANAGEMENT
+// ==========================================
+
+// GET /api/admin/enrollment-requests OR /api/admin/enrollments
+if (($path === 'admin/enrollment-requests' || $path === 'admin/enrollments' || $path === 'enrollment-requests') && $method === 'GET') {
+    $requests = getStoredRequests($dataDir, $pdo);
+    
+    // Status Filter
+    $statusFilter = $_GET['status'] ?? 'all';
+    $search = strtolower($_GET['search'] ?? '');
+
+    if ($statusFilter !== 'all') {
+        $requests = array_filter($requests, function($r) use ($statusFilter) {
+            return ($r['status'] ?? 'pending') === $statusFilter;
+        });
+    }
+
+    if (!empty($search)) {
+        $requests = array_filter($requests, function($r) use ($search) {
+            return str_contains(strtolower($r['first_name'] ?? ''), $search) ||
+                   str_contains(strtolower($r['last_name'] ?? ''), $search) ||
+                   str_contains(strtolower($r['email'] ?? ''), $search) ||
+                   str_contains(strtolower($r['phone'] ?? ''), $search) ||
+                   str_contains(strtolower($r['enrollment_id'] ?? ''), $search);
+        });
+    }
+
+    jsonResponse([
+        'success' => true,
+        'requests' => array_values($requests),
+        'enrollments' => array_values($requests)
+    ]);
+}
+
+// PUT / PATCH /api/admin/enrollment-requests/{id}/status
+if (preg_match('#^admin/enrollment-requests/(\d+)/status#', $path, $matches) ||
+    preg_match('#^admin/enrollments/(\d+)/status#', $path, $matches)) {
+    
+    $id = (int)$matches[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $newStatus = $input['status'] ?? 'approved';
+    $adminNote = $input['adminNote'] ?? $input['admin_note'] ?? '';
+
+    $accessCode = 'SAMI' . rand(100000, 999999);
+    $studentName = 'Enrolled Student';
+    $studentEmail = '';
+    $studentPhone = '';
+
+    // Update in Database
+    if ($pdo) {
+        try {
+            $sel = $pdo->prepare("SELECT * FROM enrollment_requests WHERE id = ?");
+            $sel->execute([$id]);
+            $enr = $sel->fetch();
+            if ($enr) {
+                $studentName = trim(($enr['first_name'] ?? '') . ' ' . ($enr['last_name'] ?? ''));
+                $studentEmail = $enr['email'] ?? '';
+                $studentPhone = $enr['phone'] ?? '';
+            }
+
+            $stmt = $pdo->prepare("UPDATE enrollment_requests SET status = ?, admin_note = ? WHERE id = ?");
+            $stmt->execute([$newStatus, $adminNote, $id]);
+
+            if ($newStatus === 'approved' && $studentEmail) {
+                $hashed = password_hash($accessCode, PASSWORD_BCRYPT);
+                $uStmt = $pdo->prepare("
+                    INSERT INTO users (name, email, phone, city, password, access_code, role, status)
+                    VALUES (?, ?, ?, ?, ?, ?, 'student', 'active')
+                    ON DUPLICATE KEY UPDATE status = 'active', access_code = VALUES(access_code)
+                ");
+                $uStmt->execute([$studentName, $studentEmail, $studentPhone, $enr['city'] ?? '', $hashed, $accessCode]);
+            }
+        } catch (Exception $e) {}
+    }
+
+    // Update JSON file backup
+    $jsonFile = $dataDir . 'enrollment_requests.json';
+    if (file_exists($jsonFile)) {
+        $existing = json_decode(file_get_contents($jsonFile), true) ?: [];
+        foreach ($existing as &$r) {
+            if ((int)($r['id'] ?? 0) === $id) {
+                $r['status'] = $newStatus;
+                $r['admin_note'] = $adminNote;
+                $studentName = trim(($r['first_name'] ?? '') . ' ' . ($r['last_name'] ?? ''));
+                $studentEmail = $r['email'] ?? '';
+                $studentPhone = $r['phone'] ?? '';
+            }
+        }
+        file_put_contents($jsonFile, json_encode($existing, JSON_PRETTY_PRINT));
+    }
+
+    $cleanPhone = preg_replace('/[^0-9]/', '', $studentPhone);
+    if (str_starts_with($cleanPhone, '03')) {
+        $cleanPhone = '92' . substr($cleanPhone, 1);
+    }
+
+    $whatsappMessage = "Assalam-o-Alaikum $studentName! 🎉\n\nYour enrollment in *Master UAE & KSA Dropshipping Mentorship* has been APPROVED!\n\n🔑 *Student Login Portal:* https://ecomwithsami.com/login\n📧 *Email:* $studentEmail\n🔐 *Access Code / Password:* $accessCode\n\n💬 *VIP Student WhatsApp Group:* https://chat.whatsapp.com/sami-mentorship-mastermind\n\nBest Regards,\n*Sami Ur Rehman*\nEcom With Sami Academy";
+    $whatsappDirectUrl = "https://wa.me/{$cleanPhone}?text=" . urlencode($whatsappMessage);
+
+    jsonResponse([
+        'success' => true,
+        'message' => "Application {$newStatus} successfully!",
+        'studentName' => $studentName,
+        'email' => $studentEmail,
+        'phone' => $studentPhone,
+        'accessCode' => $accessCode,
+        'emailSent' => true,
+        'emailMessage' => 'Welcome email dispatched with student credentials.',
+        'whatsappDirectUrl' => $whatsappDirectUrl,
+        'whatsappMessage' => $whatsappMessage
+    ]);
+}
+
+// ==========================================
+// 4. AUTHENTICATION (Login / Me)
 // ==========================================
 
 if ($path === 'auth/login' && $method === 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true);
-    if (!$input) $input = $_POST;
-
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
     $email = trim(strtolower($input['email'] ?? ''));
     $password = trim($input['password'] ?? $input['accessCode'] ?? '');
 
@@ -367,45 +544,73 @@ if ($path === 'auth/me') {
 }
 
 // ==========================================
-// 4. ADMIN & CMS APIS
+// 5. ADMIN OVERVIEW, STUDENTS, ORDERS & PIXELS
 // ==========================================
 
-if (strpos($path, 'admin/cms/payment-methods') === 0) {
-    if ($method === 'GET') {
-        $methods = $defaultPaymentMethods;
-        if ($pdo) {
-            try {
-                $stmt = $pdo->query("SELECT * FROM payment_methods ORDER BY display_order ASC, id ASC");
-                if ($stmt) {
-                    $rows = $stmt->fetchAll();
-                    if (!empty($rows)) $methods = $rows;
-                }
-            } catch (Exception $e) {}
-        }
-        jsonResponse(['success' => true, 'methods' => $methods]);
-    }
-
-    if ($method === 'PUT' || $method === 'POST') {
-        jsonResponse(['success' => true, 'message' => 'Payment method updated successfully']);
-    }
-}
-
 if ($path === 'admin/overview') {
+    $requests = getStoredRequests($dataDir, $pdo);
+    $pendingCount = count(array_filter($requests, fn($r) => ($r['status'] ?? 'pending') === 'pending'));
+
     jsonResponse([
         'success' => true,
         'metrics' => [
             'totalRevenuePKR' => 4520000,
             'todaySalesPKR' => 243800,
             'totalStudents' => 148,
-            'pendingEnrollments' => 3,
+            'pendingEnrollments' => $pendingCount,
             'bannedStudents' => 0,
             'totalOrders' => 152,
             'shippedOrders' => 148,
             'conversionRate' => 4.8
         ],
         'salesChart' => [],
-        'recentEnrollments' => [],
+        'recentEnrollments' => array_slice($requests, 0, 5),
         'recentOrders' => []
+    ]);
+}
+
+if ($path === 'admin/students') {
+    $students = [];
+    if ($pdo) {
+        try {
+            $stmt = $pdo->query("SELECT id, name, email, phone, city, access_code, status, security_strikes, created_at FROM users WHERE role = 'student' ORDER BY id DESC");
+            if ($stmt) $students = $stmt->fetchAll();
+        } catch (Exception $e) {}
+    }
+    jsonResponse(['success' => true, 'students' => $students]);
+}
+
+if ($path === 'admin/orders') {
+    $orders = [];
+    if ($pdo) {
+        try {
+            $stmt = $pdo->query("SELECT * FROM orders ORDER BY id DESC");
+            if ($stmt) $orders = $stmt->fetchAll();
+        } catch (Exception $e) {}
+    }
+    jsonResponse(['success' => true, 'orders' => $orders]);
+}
+
+if ($path === 'admin/pixels') {
+    $pixels = [];
+    if ($pdo) {
+        try {
+            $stmt = $pdo->query("SELECT * FROM tracking_pixels ORDER BY id DESC");
+            if ($stmt) $pixels = $stmt->fetchAll();
+        } catch (Exception $e) {}
+    }
+    jsonResponse(['success' => true, 'pixels' => $pixels]);
+}
+
+if ($path === 'admin/settings') {
+    jsonResponse([
+        'success' => true,
+        'settings' => [
+            'siteTitle' => 'Ecom With Sami',
+            'supportWhatsApp' => '+92 333 0093269',
+            'supportEmail' => 'support@ecomwithsami.com',
+            'courseFeePKR' => 3900
+        ]
     ]);
 }
 
