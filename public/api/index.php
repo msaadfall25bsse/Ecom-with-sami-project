@@ -2,6 +2,7 @@
 /**
  * Sami E-Commerce & Dropshipping Academy - Universal PHP API Gateway
  * Handles all /api/* requests on Hostinger Apache / Shared Hosting
+ * Full Dynamic 2-Way Synchronization between Admin Panel & Student LMS
  */
 
 error_reporting(E_ALL);
@@ -70,6 +71,109 @@ if (!is_dir($dataDir)) {
     @mkdir($dataDir, 0777, true);
 }
 
+// Standard 11 Course Modules Default Seed
+$defaultModulesSeed = [
+    [
+        'id' => 1,
+        'module_number' => '01',
+        'title' => 'Mindset, E-Com Fundamentals & Gulf Market Overview',
+        'description' => 'Introduction to high-ticket dropshipping in UAE and Saudi Arabia.',
+        'sort_order' => 1,
+        'lessons' => [
+            ['id' => 1, 'module_id' => 1, 'title' => 'Welcome to Sami Mentorship & Roadmap (Urdu)', 'duration' => '14:20', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => '1. Focus on AED/SAR markets.\n2. Complete action steps daily.', 'is_preview' => 1, 'sort_order' => 1],
+            ['id' => 2, 'module_id' => 1, 'title' => 'Why UAE & KSA are the Most Profitable Markets in 2026', 'duration' => '18:45', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'High purchasing power and fast delivery networks.', 'is_preview' => 0, 'sort_order' => 2],
+            ['id' => 3, 'module_id' => 1, 'title' => 'Cash on Delivery (COD) Business Model Explained', 'duration' => '22:10', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'COD remittance cycle and order verification steps.', 'is_preview' => 0, 'sort_order' => 3]
+        ]
+    ],
+    [
+        'id' => 2,
+        'module_number' => '02',
+        'title' => 'High-Margin Product Hunting for UAE & KSA',
+        'description' => 'Unlocking winning products with zero competition and high profit margins.',
+        'sort_order' => 2,
+        'lessons' => [
+            ['id' => 4, 'module_id' => 2, 'title' => 'Winning Product Criteria for Gulf Consumers', 'duration' => '25:30', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'Problem solving products with high perceived value.', 'is_preview' => 0, 'sort_order' => 1],
+            ['id' => 5, 'module_id' => 2, 'title' => 'TikTok Creative Center & Ad Library Spy Method', 'duration' => '31:15', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'Finding unsaturated winning ad angles.', 'is_preview' => 0, 'sort_order' => 2],
+            ['id' => 6, 'module_id' => 2, 'title' => 'Competitor Analysis & Reverse Engineering Stores', 'duration' => '19:40', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'Analyzing competitor pricing, offers and creatives.', 'is_preview' => 0, 'sort_order' => 3]
+        ]
+    ],
+    [
+        'id' => 3,
+        'module_number' => '03',
+        'title' => 'Gulf Supplier Sourcing & COD Courier Agreements',
+        'description' => 'Connecting with verified local suppliers and reliable courier partners.',
+        'sort_order' => 3,
+        'lessons' => [
+            ['id' => 7, 'module_id' => 3, 'title' => 'Verified UAE & KSA Supplier Contacts', 'duration' => '28:00', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'Direct supplier directory in Dubai & Riyadh.', 'is_preview' => 0, 'sort_order' => 1],
+            ['id' => 8, 'module_id' => 3, 'title' => 'Courier Account Setup & COD Remittance Terms', 'duration' => '21:50', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'Setting up courier accounts with 3-day payouts.', 'is_preview' => 0, 'sort_order' => 2],
+            ['id' => 9, 'module_id' => 3, 'title' => 'Negotiating Best Product Sourcing Prices', 'duration' => '16:30', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'Volume discounts and local warehousing tips.', 'is_preview' => 0, 'sort_order' => 3]
+        ]
+    ],
+    [
+        'id' => 4,
+        'module_number' => '04',
+        'title' => 'High-Converting Shopify Store Blueprint & Design',
+        'description' => 'Building a clean, luxury e-commerce store optimized for Arabic & English buyers.',
+        'sort_order' => 4,
+        'lessons' => [
+            ['id' => 10, 'module_id' => 4, 'title' => 'Shopify Store Creation & Setup for GCC', 'duration' => '35:20', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'Store currency, shipping zones, and domain setup.', 'is_preview' => 0, 'sort_order' => 1],
+            ['id' => 11, 'module_id' => 4, 'title' => 'High-Converting Theme Installation & Customization', 'duration' => '42:10', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'Clean luxury theme optimized for mobile.', 'is_preview' => 0, 'sort_order' => 2],
+            ['id' => 12, 'module_id' => 4, 'title' => '1-Click Fast COD Checkout App Setup', 'duration' => '24:15', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'Replaces Shopify checkout with 1-click COD form.', 'is_preview' => 0, 'sort_order' => 3],
+            ['id' => 13, 'module_id' => 4, 'title' => 'Arabic Language Translation & Currency Settings', 'duration' => '18:50', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'Translating key buttons and product pages to Arabic.', 'is_preview' => 0, 'sort_order' => 4]
+        ]
+    ],
+    [
+        'id' => 5,
+        'module_number' => '05',
+        'title' => 'TikTok Ads Mastery: Setup, Creative Testing & Scaling',
+        'description' => 'Step-by-step masterclass on launching viral TikTok ads that generate sales.',
+        'sort_order' => 5,
+        'lessons' => [
+            ['id' => 14, 'module_id' => 5, 'title' => 'TikTok Agency Account Setup (No Suspension Guarantee)', 'duration' => '29:40', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'Unbannable agency ad accounts for UAE and KSA targeting.', 'is_preview' => 0, 'sort_order' => 1],
+            ['id' => 15, 'module_id' => 5, 'title' => 'TikTok Pixel & Events API Setup on Shopify', 'duration' => '33:10', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'Accurate purchase tracking and event verification.', 'is_preview' => 0, 'sort_order' => 2],
+            ['id' => 16, 'module_id' => 5, 'title' => 'Creating Viral Video Ads in CapCut (Urdu Tutorial)', 'duration' => '45:00', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => '3-second hook formula and Arabic voiceover AI tools.', 'is_preview' => 0, 'sort_order' => 3],
+            ['id' => 17, 'module_id' => 5, 'title' => 'Campaign Structure: ABO vs CBO & Scaling Rules', 'duration' => '38:25', 'video_type' => 'bunny', 'bunny_video_id' => '', 'vdocipher_id' => '', 'notes' => 'Daily budget allocation and scaling winning adsets.', 'is_preview' => 0, 'sort_order' => 4]
+        ]
+    ]
+];
+
+// Helper: Get Full Curriculum (MySQL DB + File fallback)
+function getCurriculumData($dataDir, $pdo, $defaultModulesSeed) {
+    if ($pdo) {
+        try {
+            $mStmt = $pdo->query("SELECT * FROM modules ORDER BY sort_order ASC, id ASC");
+            if ($mStmt) {
+                $modules = $mStmt->fetchAll();
+                if (!empty($modules)) {
+                    foreach ($modules as &$mod) {
+                        $lStmt = $pdo->prepare("SELECT * FROM lessons WHERE module_id = ? ORDER BY sort_order ASC, id ASC");
+                        $lStmt->execute([$mod['id']]);
+                        $mod['lessons'] = $lStmt->fetchAll() ?: [];
+                    }
+                    return $modules;
+                }
+            }
+        } catch (Exception $e) {}
+    }
+
+    $file = $dataDir . 'curriculum.json';
+    if (file_exists($file)) {
+        $json = json_decode(file_get_contents($file), true);
+        if (is_array($json) && !empty($json)) return $json;
+    }
+
+    // Seed default file
+    file_put_contents($file, json_encode($defaultModulesSeed, JSON_PRETTY_PRINT));
+    return $defaultModulesSeed;
+}
+
+// Helper: Save Curriculum Data
+function saveCurriculumData($dataDir, $modules) {
+    $file = $dataDir . 'curriculum.json';
+    file_put_contents($file, json_encode($modules, JSON_PRETTY_PRINT));
+}
+
+// Helper: Get Stored Enrollment Requests
 function getStoredRequests($dataDir, $pdo) {
     $requests = [];
     if ($pdo) {
@@ -81,7 +185,6 @@ function getStoredRequests($dataDir, $pdo) {
         } catch (Exception $e) {}
     }
     
-    // File fallback if DB is empty
     $jsonFile = $dataDir . 'enrollment_requests.json';
     if (empty($requests) && file_exists($jsonFile)) {
         $data = json_decode(file_get_contents($jsonFile), true);
@@ -90,6 +193,7 @@ function getStoredRequests($dataDir, $pdo) {
     return $requests;
 }
 
+// Helper: Save Stored Enrollment Request
 function saveStoredRequest($dataDir, $pdo, $record) {
     if ($pdo) {
         try {
@@ -126,7 +230,7 @@ function saveStoredRequest($dataDir, $pdo, $record) {
     return $record;
 }
 
-// 6 Official Sardar Samiullah Payment Accounts
+// 6 Official Payment Methods
 $defaultPaymentMethods = [
     [
         'id' => 1,
@@ -220,87 +324,14 @@ $defaultPaymentMethods = [
     ]
 ];
 
-// Standard 11 Course Modules
-$standardCurriculum = [
-    [
-        'id' => 1,
-        'module_number' => '01',
-        'title' => 'Mindset, E-Com Fundamentals & Gulf Market Overview',
-        'description' => 'Introduction to high-ticket dropshipping in UAE and Saudi Arabia.',
-        'totalLessons' => 3,
-        'completedLessons' => 0,
-        'lessons' => [
-            ['id' => 1, 'title' => 'Welcome to Sami Mentorship & Roadmap (Urdu)', 'duration' => '14:20', 'is_completed' => false, 'is_preview' => true],
-            ['id' => 2, 'title' => 'Why UAE & KSA are the Most Profitable Markets in 2026', 'duration' => '18:45', 'is_completed' => false, 'is_preview' => false],
-            ['id' => 3, 'title' => 'Cash on Delivery (COD) Business Model Explained', 'duration' => '22:10', 'is_completed' => false, 'is_preview' => false]
-        ]
-    ],
-    [
-        'id' => 2,
-        'module_number' => '02',
-        'title' => 'High-Margin Product Hunting for UAE & KSA',
-        'description' => 'Unlocking winning products with zero competition and high profit margins.',
-        'totalLessons' => 3,
-        'completedLessons' => 0,
-        'lessons' => [
-            ['id' => 4, 'title' => 'Winning Product Criteria for Gulf Consumers', 'duration' => '25:30', 'is_completed' => false, 'is_preview' => false],
-            ['id' => 5, 'title' => 'TikTok Creative Center & Ad Library Spy Method', 'duration' => '31:15', 'is_completed' => false, 'is_preview' => false],
-            ['id' => 6, 'title' => 'Competitor Analysis & Reverse Engineering Stores', 'duration' => '19:40', 'is_completed' => false, 'is_preview' => false]
-        ]
-    ],
-    [
-        'id' => 3,
-        'module_number' => '03',
-        'title' => 'Gulf Supplier Sourcing & COD Courier Agreements',
-        'description' => 'Connecting with verified local suppliers and reliable courier partners.',
-        'totalLessons' => 3,
-        'completedLessons' => 0,
-        'lessons' => [
-            ['id' => 7, 'title' => 'Verified UAE & KSA Supplier Contacts', 'duration' => '28:00', 'is_completed' => false, 'is_preview' => false],
-            ['id' => 8, 'title' => 'Courier Account Setup & COD Remittance Terms', 'duration' => '21:50', 'is_completed' => false, 'is_preview' => false],
-            ['id' => 9, 'title' => 'Negotiating Best Product Sourcing Prices', 'duration' => '16:30', 'is_completed' => false, 'is_preview' => false]
-        ]
-    ],
-    [
-        'id' => 4,
-        'module_number' => '04',
-        'title' => 'High-Converting Shopify Store Blueprint & Design',
-        'description' => 'Building a clean, luxury e-commerce store optimized for Arabic & English buyers.',
-        'totalLessons' => 4,
-        'completedLessons' => 0,
-        'lessons' => [
-            ['id' => 10, 'title' => 'Shopify Store Creation & Setup for GCC', 'duration' => '35:20', 'is_completed' => false, 'is_preview' => false],
-            ['id' => 11, 'title' => 'High-Converting Theme Installation & Customization', 'duration' => '42:10', 'is_completed' => false, 'is_preview' => false],
-            ['id' => 12, 'title' => '1-Click Fast COD Checkout App Setup', 'duration' => '24:15', 'is_completed' => false, 'is_preview' => false],
-            ['id' => 13, 'title' => 'Arabic Language Translation & Currency Settings', 'duration' => '18:50', 'is_completed' => false, 'is_preview' => false]
-        ]
-    ],
-    [
-        'id' => 5,
-        'module_number' => '05',
-        'title' => 'TikTok Ads Mastery: Setup, Creative Testing & Scaling',
-        'description' => 'Step-by-step masterclass on launching viral TikTok ads that generate sales.',
-        'totalLessons' => 4,
-        'completedLessons' => 0,
-        'lessons' => [
-            ['id' => 14, 'title' => 'TikTok Agency Account Setup (No Suspension Guarantee)', 'duration' => '29:40', 'is_completed' => false, 'is_preview' => false],
-            ['id' => 15, 'title' => 'TikTok Pixel & Events API Setup on Shopify', 'duration' => '33:10', 'is_completed' => false, 'is_preview' => false],
-            ['id' => 16, 'title' => 'Creating Viral Video Ads in CapCut (Urdu Tutorial)', 'duration' => '45:00', 'is_completed' => false, 'is_preview' => false],
-            ['id' => 17, 'title' => 'Campaign Structure: ABO vs CBO & Scaling Rules', 'duration' => '38:25', 'is_completed' => false, 'is_preview' => false]
-        ]
-    ]
-];
-
 // ==========================================
-// 1. PUBLIC API ROUTES
+// 1. PUBLIC STOREFRONT APIS
 // ==========================================
 
-// GET /api/health
 if ($path === 'health' || $path === '') {
-    jsonResponse(['status' => 'ok', 'server' => 'PHP Hostinger Gateway', 'time' => date('Y-m-d H:i:s')]);
+    jsonResponse(['status' => 'ok', 'server' => 'PHP Hostinger Universal Gateway', 'time' => date('Y-m-d H:i:s')]);
 }
 
-// GET /api/pixels/active
 if ($path === 'pixels/active' || $path === 'pixels') {
     $pixels = [];
     if ($pdo) {
@@ -312,7 +343,6 @@ if ($path === 'pixels/active' || $path === 'pixels') {
     jsonResponse(['success' => true, 'pixels' => $pixels]);
 }
 
-// GET /api/public/contact-config
 if ($path === 'public/contact-config' || $path === 'contact-config') {
     jsonResponse([
         'success' => true,
@@ -329,7 +359,6 @@ if ($path === 'public/contact-config' || $path === 'contact-config') {
     ]);
 }
 
-// GET /api/public/payment-methods
 if ($path === 'public/payment-methods' || $path === 'payment-methods') {
     $methods = $defaultPaymentMethods;
     if ($pdo) {
@@ -344,12 +373,10 @@ if ($path === 'public/payment-methods' || $path === 'payment-methods') {
     jsonResponse(['success' => true, 'methods' => $methods]);
 }
 
-// GET /api/public/cms-content
 if ($path === 'public/cms-content' || $path === 'cms-content') {
     $sections = [];
     $reviews = [];
     $blogs = [];
-
     if ($pdo) {
         try {
             $stmt = $pdo->query("SELECT section_key, title, content_json FROM cms_sections WHERE is_visible = 1");
@@ -366,34 +393,13 @@ if ($path === 'public/cms-content' || $path === 'cms-content') {
             if ($blogStmt) $blogs = $blogStmt->fetchAll();
         } catch (Exception $e) {}
     }
-
-    jsonResponse([
-        'success' => true,
-        'sections' => (object)$sections,
-        'reviews' => $reviews,
-        'blogs' => $blogs
-    ]);
-}
-
-// GET /api/public/faq-reviews
-if ($path === 'public/faq-reviews' || $path === 'faq-reviews') {
-    jsonResponse([
-        'success' => true,
-        'reviews' => [],
-        'faqs' => []
-    ]);
-}
-
-// POST /api/public/contact
-if ($path === 'public/contact' || $path === 'contact') {
-    jsonResponse(['success' => true, 'message' => 'Thank you! We will reply via WhatsApp/Email shortly.']);
+    jsonResponse(['success' => true, 'sections' => (object)$sections, 'reviews' => $reviews, 'blogs' => $blogs]);
 }
 
 // ==========================================
 // 2. ENROLLMENT & CHECKOUT SUBMISSIONS
 // ==========================================
 
-// POST /api/enrollments
 if ($path === 'enrollments' && $method === 'POST') {
     $firstName = trim($_POST['firstName'] ?? $_POST['first_name'] ?? '');
     $lastName = trim($_POST['lastName'] ?? $_POST['last_name'] ?? '');
@@ -472,7 +478,7 @@ if ($path === 'auth/login' && $method === 'POST') {
         ]);
     }
 
-    // 2. Check Database for Student
+    // 2. Student Lookup in Database
     $foundUser = null;
     if ($pdo) {
         try {
@@ -495,12 +501,13 @@ if ($path === 'auth/login' && $method === 'POST') {
                 'phone' => $foundUser['phone'] ?? '',
                 'city' => $foundUser['city'] ?? '',
                 'role' => 'student',
-                'status' => $foundUser['status'] ?? 'active'
+                'status' => $foundUser['status'] ?? 'active',
+                'security_strikes' => (int)($foundUser['security_strikes'] ?? 0)
             ]
         ]);
     }
 
-    // 3. Fallback / Default Student Login (Instant access for students)
+    // 3. Default Instant Student Access Fallback
     $token = base64_encode('10|student|' . time());
     jsonResponse([
         'success' => true,
@@ -511,7 +518,8 @@ if ($path === 'auth/login' && $method === 'POST') {
             'name' => 'Sami Academy Student',
             'email' => $email ?: 'student@ecomwithsami.com',
             'role' => 'student',
-            'status' => 'active'
+            'status' => 'active',
+            'security_strikes' => 0
         ]
     ]);
 }
@@ -529,27 +537,301 @@ if ($path === 'auth/me') {
 }
 
 // ==========================================
-// 4. STUDENT LMS ENDPOINTS
+// 4. ADMIN CURRICULUM MANAGEMENT (CRUD)
 // ==========================================
 
-if ($path === 'lms/dashboard') {
+// GET /api/admin/curriculum OR /api/admin/curriculum/modules
+if (($path === 'admin/curriculum' || $path === 'admin/curriculum/modules' || $path === 'admin/modules') && $method === 'GET') {
+    $modules = getCurriculumData($dataDir, $pdo, $defaultModulesSeed);
+    $totalLessons = 0;
+    foreach ($modules as $m) {
+        $totalLessons += count($m['lessons'] ?? []);
+    }
     jsonResponse([
         'success' => true,
-        'isSuspended' => false,
+        'modules' => $modules,
+        'curriculum' => $modules,
+        'stats' => [
+            'totalModules' => count($modules),
+            'totalLessons' => $totalLessons
+        ]
+    ]);
+}
+
+// POST /api/admin/curriculum/modules OR /api/admin/modules
+if (($path === 'admin/curriculum/modules' || $path === 'admin/modules') && $method === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $title = trim($input['title'] ?? '');
+    $moduleNumber = trim($input['module_number'] ?? '');
+    $description = trim($input['description'] ?? '');
+    $sortOrder = (int)($input['sort_order'] ?? 0);
+
+    if (!$title) {
+        jsonResponse(['success' => false, 'message' => 'Module title is required'], 400);
+    }
+
+    $modules = getCurriculumData($dataDir, $pdo, $defaultModulesSeed);
+    $newId = count($modules) > 0 ? (max(array_column($modules, 'id')) + 1) : 1;
+    if (!$moduleNumber) {
+        $moduleNumber = str_pad((string)($newId), 2, '0', STR_PAD_LEFT);
+    }
+    if (!$sortOrder) {
+        $sortOrder = count($modules) + 1;
+    }
+
+    $newModule = [
+        'id' => $newId,
+        'module_number' => $moduleNumber,
+        'title' => $title,
+        'description' => $description,
+        'sort_order' => $sortOrder,
+        'lessons' => []
+    ];
+
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("INSERT INTO modules (course_id, module_number, title, description, sort_order) VALUES (1, ?, ?, ?, ?)");
+            $stmt->execute([$moduleNumber, $title, $description, $sortOrder]);
+            $newModule['id'] = (int)$pdo->lastInsertId();
+        } catch (Exception $e) {}
+    }
+
+    $modules[] = $newModule;
+    saveCurriculumData($dataDir, $modules);
+
+    jsonResponse(['success' => true, 'message' => 'Module created successfully', 'id' => $newModule['id'], 'module' => $newModule]);
+}
+
+// PUT /api/admin/curriculum/modules/{id} OR /api/admin/modules/{id}
+if (preg_match('#^admin/(?:curriculum/)?modules/(\d+)$#', $path, $matches) && $method === 'PUT') {
+    $moduleId = (int)$matches[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $title = trim($input['title'] ?? '');
+    $moduleNumber = trim($input['module_number'] ?? '');
+    $description = trim($input['description'] ?? '');
+    $sortOrder = isset($input['sort_order']) ? (int)$input['sort_order'] : null;
+
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("UPDATE modules SET title = ?, module_number = COALESCE(?, module_number), description = ?, sort_order = COALESCE(?, sort_order) WHERE id = ?");
+            $stmt->execute([$title, $moduleNumber ?: null, $description, $sortOrder, $moduleId]);
+        } catch (Exception $e) {}
+    }
+
+    $modules = getCurriculumData($dataDir, $pdo, $defaultModulesSeed);
+    foreach ($modules as &$m) {
+        if ((int)$m['id'] === $moduleId) {
+            if ($title) $m['title'] = $title;
+            if ($moduleNumber) $m['module_number'] = $moduleNumber;
+            if ($description !== '') $m['description'] = $description;
+            if ($sortOrder !== null) $m['sort_order'] = $sortOrder;
+            break;
+        }
+    }
+    saveCurriculumData($dataDir, $modules);
+
+    jsonResponse(['success' => true, 'message' => 'Module updated successfully']);
+}
+
+// DELETE /api/admin/curriculum/modules/{id} OR /api/admin/modules/{id}
+if (preg_match('#^admin/(?:curriculum/)?modules/(\d+)$#', $path, $matches) && $method === 'DELETE') {
+    $moduleId = (int)$matches[1];
+    if ($pdo) {
+        try {
+            $pdo->prepare("DELETE FROM lessons WHERE module_id = ?")->execute([$moduleId]);
+            $pdo->prepare("DELETE FROM modules WHERE id = ?")->execute([$moduleId]);
+        } catch (Exception $e) {}
+    }
+
+    $modules = getCurriculumData($dataDir, $pdo, $defaultModulesSeed);
+    $modules = array_values(array_filter($modules, fn($m) => (int)$m['id'] !== $moduleId));
+    saveCurriculumData($dataDir, $modules);
+
+    jsonResponse(['success' => true, 'message' => 'Module and lessons deleted successfully']);
+}
+
+// POST /api/admin/curriculum/lessons OR /api/admin/lessons
+if (($path === 'admin/curriculum/lessons' || $path === 'admin/lessons') && $method === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $moduleId = (int)($input['module_id'] ?? 1);
+    $title = trim($input['title'] ?? '');
+    $description = trim($input['description'] ?? '');
+    $duration = trim($input['duration'] ?? '15:00');
+    $bunnyVideoId = trim($input['bunny_video_id'] ?? '');
+    $vdocipherId = trim($input['vdocipher_id'] ?? '');
+    $notes = trim($input['notes'] ?? '');
+    $sortOrder = (int)($input['sort_order'] ?? 0);
+    $isPreview = !empty($input['is_preview']) ? 1 : 0;
+
+    if (!$title) {
+        jsonResponse(['success' => false, 'message' => 'Lesson title is required'], 400);
+    }
+
+    $modules = getCurriculumData($dataDir, $pdo, $defaultModulesSeed);
+    $allLessonIds = [];
+    foreach ($modules as $m) {
+        foreach ($m['lessons'] ?? [] as $l) $allLessonIds[] = (int)$l['id'];
+    }
+    $newLessonId = count($allLessonIds) > 0 ? (max($allLessonIds) + 1) : 1;
+
+    $newLesson = [
+        'id' => $newLessonId,
+        'module_id' => $moduleId,
+        'title' => $title,
+        'description' => $description,
+        'duration' => $duration,
+        'video_type' => 'bunny',
+        'bunny_video_id' => $bunnyVideoId,
+        'vdocipher_id' => $vdocipherId,
+        'notes' => $notes,
+        'sort_order' => $sortOrder ?: ($newLessonId),
+        'is_preview' => $isPreview
+    ];
+
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("
+                INSERT INTO lessons (module_id, title, description, video_type, bunny_video_id, vdocipher_id, duration, notes, sort_order, is_preview)
+                VALUES (?, ?, ?, 'bunny', ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([$moduleId, $title, $description, $bunnyVideoId, $vdocipherId, $duration, $notes, $newLesson['sort_order'], $isPreview]);
+            $newLesson['id'] = (int)$pdo->lastInsertId();
+        } catch (Exception $e) {}
+    }
+
+    foreach ($modules as &$m) {
+        if ((int)$m['id'] === $moduleId) {
+            $m['lessons'][] = $newLesson;
+            break;
+        }
+    }
+    saveCurriculumData($dataDir, $modules);
+
+    jsonResponse(['success' => true, 'message' => 'Lesson created successfully', 'id' => $newLesson['id'], 'lesson' => $newLesson]);
+}
+
+// PUT /api/admin/curriculum/lessons/{id} OR /api/admin/lessons/{id}
+if (preg_match('#^admin/(?:curriculum/)?lessons/(\d+)$#', $path, $matches) && $method === 'PUT') {
+    $lessonId = (int)$matches[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $title = trim($input['title'] ?? '');
+    $description = trim($input['description'] ?? '');
+    $duration = trim($input['duration'] ?? '15:00');
+    $bunnyVideoId = trim($input['bunny_video_id'] ?? '');
+    $vdocipherId = trim($input['vdocipher_id'] ?? '');
+    $notes = trim($input['notes'] ?? '');
+    $sortOrder = isset($input['sort_order']) ? (int)$input['sort_order'] : null;
+    $isPreview = isset($input['is_preview']) ? (!empty($input['is_preview']) ? 1 : 0) : null;
+
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("
+                UPDATE lessons 
+                SET title = ?, description = ?, duration = ?, bunny_video_id = ?, vdocipher_id = ?, notes = ?,
+                    sort_order = COALESCE(?, sort_order), is_preview = COALESCE(?, is_preview)
+                WHERE id = ?
+            ");
+            $stmt->execute([$title, $description, $duration, $bunnyVideoId, $vdocipherId, $notes, $sortOrder, $isPreview, $lessonId]);
+        } catch (Exception $e) {}
+    }
+
+    $modules = getCurriculumData($dataDir, $pdo, $defaultModulesSeed);
+    foreach ($modules as &$m) {
+        foreach ($m['lessons'] as &$l) {
+            if ((int)$l['id'] === $lessonId) {
+                if ($title) $l['title'] = $title;
+                if ($description !== '') $l['description'] = $description;
+                if ($duration) $l['duration'] = $duration;
+                $l['bunny_video_id'] = $bunnyVideoId;
+                $l['vdocipher_id'] = $vdocipherId;
+                if ($notes !== '') $l['notes'] = $notes;
+                if ($sortOrder !== null) $l['sort_order'] = $sortOrder;
+                if ($isPreview !== null) $l['is_preview'] = $isPreview;
+                break 2;
+            }
+        }
+    }
+    saveCurriculumData($dataDir, $modules);
+
+    jsonResponse(['success' => true, 'message' => 'Lesson updated successfully']);
+}
+
+// DELETE /api/admin/curriculum/lessons/{id} OR /api/admin/lessons/{id}
+if (preg_match('#^admin/(?:curriculum/)?lessons/(\d+)$#', $path, $matches) && $method === 'DELETE') {
+    $lessonId = (int)$matches[1];
+    if ($pdo) {
+        try {
+            $pdo->prepare("DELETE FROM lessons WHERE id = ?")->execute([$lessonId]);
+        } catch (Exception $e) {}
+    }
+
+    $modules = getCurriculumData($dataDir, $pdo, $defaultModulesSeed);
+    foreach ($modules as &$m) {
+        $m['lessons'] = array_values(array_filter($m['lessons'], fn($l) => (int)$l['id'] !== $lessonId));
+    }
+    saveCurriculumData($dataDir, $modules);
+
+    jsonResponse(['success' => true, 'message' => 'Lesson deleted successfully']);
+}
+
+// ==========================================
+// 5. STUDENT LMS ENDPOINTS (DYNAMIC DATA)
+// ==========================================
+
+// GET /api/lms/dashboard
+if ($path === 'lms/dashboard') {
+    $studentId = 10;
+    $studentName = 'Enrolled Student';
+    $studentEmail = 'student@ecomwithsami.com';
+    $studentStrikes = 0;
+    $isSuspended = false;
+
+    // Check token
+    $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    if (preg_match('/Bearer\s+(.*)$/i', $auth, $matches)) {
+        $decoded = base64_decode($matches[1]);
+        $parts = explode('|', $decoded);
+        if (count($parts) >= 2) {
+            $studentId = (int)$parts[0];
+        }
+    }
+
+    if ($pdo && $studentId) {
+        try {
+            $stmt = $pdo->prepare("SELECT id, name, email, phone, city, status, security_strikes, suspended_reason FROM users WHERE id = ?");
+            $stmt->execute([$studentId]);
+            $u = $stmt->fetch();
+            if ($u) {
+                $studentName = $u['name'];
+                $studentEmail = $u['email'];
+                $studentStrikes = (int)($u['security_strikes'] ?? 0);
+                $isSuspended = ($u['status'] === 'suspended' || $studentStrikes >= 3);
+            }
+        } catch (Exception $e) {}
+    }
+
+    $modules = getCurriculumData($dataDir, $pdo, $defaultModulesSeed);
+    $totalLessons = 0;
+    foreach ($modules as $m) $totalLessons += count($m['lessons'] ?? []);
+
+    jsonResponse([
+        'success' => true,
+        'isSuspended' => $isSuspended,
         'student' => [
-            'id' => 10,
-            'name' => 'Enrolled Student',
-            'email' => 'student@ecomwithsami.com',
+            'id' => $studentId,
+            'name' => $studentName,
+            'email' => $studentEmail,
             'phone' => '03481095933',
             'city' => 'Pakistan',
-            'status' => 'active',
-            'security_strikes' => 0
+            'status' => $isSuspended ? 'suspended' : 'active',
+            'security_strikes' => $studentStrikes
         ],
+        'suspendedReason' => 'Account suspended due to multiple unauthorized screenshot or screen recording attempts (3/3 strikes)',
         'announcement' => '🔥 Welcome to Sami UAE & KSA Dropshipping Mentorship! Start with Module 01 below.',
         'stats' => [
-            'totalLessons' => 36,
-            'completedLessons' => 1,
-            'progressPercentage' => 3
+            'totalLessons' => $totalLessons ?: 36,
+            'completedLessons' => 0,
+            'progressPercentage' => 0
         ],
         'adminWhatsApp' => '+92 333 0093269',
         'whatsappGroupUrl' => 'https://chat.whatsapp.com/sami-mentorship-mastermind',
@@ -590,64 +872,104 @@ if ($path === 'lms/dashboard') {
     ]);
 }
 
+// GET /api/lms/curriculum (Dynamic synchronized curriculum)
 if ($path === 'lms/curriculum') {
+    $modules = getCurriculumData($dataDir, $pdo, $defaultModulesSeed);
+    $totalLessons = 0;
+    $curriculumFormatted = array_map(function($m) use (&$totalLessons) {
+        $lessons = array_map(function($l) {
+            return [
+                'id' => (int)$l['id'],
+                'title' => $l['title'],
+                'duration' => $l['duration'] ?? '15:00',
+                'is_completed' => false,
+                'is_preview' => !empty($l['is_preview'])
+            ];
+        }, $m['lessons'] ?? []);
+        $totalLessons += count($lessons);
+
+        return [
+            'id' => (int)$m['id'],
+            'module_number' => $m['module_number'],
+            'title' => $m['title'],
+            'description' => $m['description'] ?? '',
+            'totalLessons' => count($lessons),
+            'completedLessons' => 0,
+            'lessons' => $lessons
+        ];
+    }, $modules);
+
     jsonResponse([
         'success' => true,
-        'curriculum' => $standardCurriculum,
+        'curriculum' => $curriculumFormatted,
         'stats' => [
-            'totalLessons' => 36,
+            'totalLessons' => $totalLessons ?: 36,
             'completedLessons' => 0,
             'progressPercentage' => 0
         ]
     ]);
 }
 
+// GET /api/lms/lesson/{id} OR /api/lms/lessons/{id}
 if (preg_match('#^lms/lesson(?:s)?/(\d+)#', $path, $matches)) {
     $lessonId = (int)$matches[1];
+    $modules = getCurriculumData($dataDir, $pdo, $defaultModulesSeed);
     
-    $lesson = null;
-    if ($pdo) {
-        try {
-            $stmt = $pdo->prepare("
-                SELECT l.*, m.title as module_title, m.module_number
-                FROM lessons l
-                JOIN modules m ON l.module_id = m.id
-                WHERE l.id = ?
-            ");
-            $stmt->execute([$lessonId]);
-            $lesson = $stmt->fetch();
-        } catch (Exception $e) {}
+    $foundLesson = null;
+    $foundModule = null;
+    $allOrderedLessons = [];
+
+    foreach ($modules as $m) {
+        foreach ($m['lessons'] ?? [] as $l) {
+            $allOrderedLessons[] = ['id' => (int)$l['id'], 'title' => $l['title']];
+            if ((int)$l['id'] === $lessonId) {
+                $foundLesson = $l;
+                $foundModule = $m;
+            }
+        }
     }
 
-    $title = $lesson['title'] ?? ('Master UAE & KSA Dropshipping - Comprehensive Lecture ' . $lessonId);
-    $moduleTitle = $lesson['module_title'] ?? 'Mindset & Gulf E-Com Fundamentals';
-    $moduleNumber = $lesson['module_number'] ?? '01';
-    $duration = $lesson['duration'] ?? '18:30';
-    $notes = $lesson['notes'] ?? "Key Takeaways from Lecture:\n1. Choose high-ticket winning products.\n2. Leverage COD couriers with fast payout cycles.\n3. Test creatives with TikTok Ads Spark and ABO campaigns.";
-    $bunnyVideoId = (!empty($lesson['bunny_video_id']) && $lesson['bunny_video_id'] !== 'sample-video') ? $lesson['bunny_video_id'] : '';
-    $vdocipherId = $lesson['vdocipher_id'] ?? '';
-    $videoUrl = $lesson['video_url'] ?? '';
+    if (!$foundLesson) {
+        // Fallback default
+        $foundLesson = [
+            'id' => $lessonId,
+            'module_id' => 1,
+            'title' => 'Master UAE & KSA Dropshipping - Lecture ' . $lessonId,
+            'description' => 'Comprehensive practical video training demonstrating step-by-step implementation.',
+            'duration' => '18:30',
+            'bunny_video_id' => '',
+            'vdocipher_id' => '',
+            'notes' => "Key Action Items:\n1. Choose high-ticket winning products in AED/SAR.\n2. Connect local COD courier with prompt payout terms.\n3. Run viral TikTok and Facebook Ads campaigns."
+        ];
+        $foundModule = ['id' => 1, 'module_number' => '01', 'title' => 'Mindset & Gulf E-Com Fundamentals'];
+    }
+
+    $currentIndex = array_search($lessonId, array_column($allOrderedLessons, 'id'));
+    $prevLesson = ($currentIndex !== false && $currentIndex > 0) ? $allOrderedLessons[$currentIndex - 1] : null;
+    $nextLesson = ($currentIndex !== false && $currentIndex < count($allOrderedLessons) - 1) ? $allOrderedLessons[$currentIndex + 1] : null;
+
+    $bunnyId = (!empty($foundLesson['bunny_video_id']) && $foundLesson['bunny_video_id'] !== 'sample-video') ? $foundLesson['bunny_video_id'] : '';
+    $vdoId = $foundLesson['vdocipher_id'] ?? '';
 
     jsonResponse([
         'success' => true,
         'lesson' => [
-            'id' => $lessonId,
-            'moduleId' => $lesson['module_id'] ?? 1,
-            'moduleNumber' => $moduleNumber,
-            'moduleTitle' => $moduleTitle,
-            'title' => $title,
-            'description' => $lesson['description'] ?? 'Detailed practical video training demonstrating step-by-step implementation from Pakistan.',
-            'videoType' => $lesson['video_type'] ?? 'direct',
-            'videoUrl' => $videoUrl,
-            'bunnyVideoId' => $bunnyVideoId,
-            'vdocipherId' => $vdocipherId,
-            'duration' => $duration,
-            'notes' => $notes,
+            'id' => (int)$foundLesson['id'],
+            'moduleId' => (int)($foundModule['id'] ?? 1),
+            'moduleNumber' => $foundModule['module_number'] ?? '01',
+            'moduleTitle' => $foundModule['title'] ?? 'Mindset & Gulf E-Com Fundamentals',
+            'title' => $foundLesson['title'],
+            'description' => $foundLesson['description'] ?? '',
+            'videoType' => $foundLesson['video_type'] ?? 'bunny',
+            'bunnyVideoId' => $bunnyId,
+            'vdocipherId' => $vdoId,
+            'duration' => $foundLesson['duration'] ?? '15:00',
+            'notes' => $foundLesson['notes'] ?? '',
             'isCompleted' => false
         ],
         'navigation' => [
-            'prevLesson' => $lessonId > 1 ? ['id' => $lessonId - 1, 'title' => 'Previous Lecture'] : null,
-            'nextLesson' => ['id' => $lessonId + 1, 'title' => 'Next Lecture']
+            'prevLesson' => $prevLesson,
+            'nextLesson' => $nextLesson
         ],
         'watermark' => [
             'studentName' => 'Sami Academy Student',
@@ -659,15 +981,49 @@ if (preg_match('#^lms/lesson(?:s)?/(\d+)#', $path, $matches)) {
     ]);
 }
 
-if ($path === 'lms/progress') {
+// POST /api/lms/security-strike (Anti-Piracy Strike Handler & Suspension)
+if ($path === 'lms/security-strike' && $method === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $eventType = $input['eventType'] ?? 'screenshot';
+    $details = $input['details'] ?? 'Screenshot or screen capture attempt detected';
+
+    $studentId = 10;
+    $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    if (preg_match('/Bearer\s+(.*)$/i', $auth, $matches)) {
+        $decoded = base64_decode($matches[1]);
+        $parts = explode('|', $decoded);
+        if (count($parts) >= 2) $studentId = (int)$parts[0];
+    }
+
+    $strikes = 1;
+    $willSuspend = false;
+
+    if ($pdo && $studentId) {
+        try {
+            $stmt = $pdo->prepare("SELECT id, name, security_strikes FROM users WHERE id = ?");
+            $stmt->execute([$studentId]);
+            $user = $stmt->fetch();
+            if ($user) {
+                $strikes = (int)($user['security_strikes'] ?? 0) + 1;
+                $willSuspend = $strikes >= 3;
+                $status = $willSuspend ? 'suspended' : 'active';
+                $reason = $willSuspend ? 'Account blocked due to multiple unauthorized screenshot or screen recording attempts (3/3 strikes)' : "Warning #{$strikes} issued for screenshot attempt";
+
+                $uStmt = $pdo->prepare("UPDATE users SET security_strikes = ?, status = ?, suspended_reason = ? WHERE id = ?");
+                $uStmt->execute([$strikes, $status, $reason, $studentId]);
+
+                $logStmt = $pdo->prepare("INSERT INTO security_logs (user_id, event_type, strike_count, ip_address, user_agent, details, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
+                $logStmt->execute([$studentId, $eventType, $strikes, $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1', $_SERVER['HTTP_USER_AGENT'] ?? '', $details]);
+            }
+        } catch (Exception $e) {}
+    }
+
     jsonResponse([
         'success' => true,
-        'message' => 'Progress updated',
-        'stats' => [
-            'totalLessons' => 36,
-            'completedLessons' => 1,
-            'progressPercentage' => 3
-        ]
+        'strikeCount' => $strikes,
+        'isSuspended' => $willSuspend,
+        'suspendedReason' => 'Account blocked due to multiple unauthorized screenshot or screen recording attempts (3/3 strikes)',
+        'adminWhatsApp' => '+92 333 0093269'
     ]);
 }
 
@@ -676,6 +1032,14 @@ if ($path === 'lms/security-status') {
         'success' => true,
         'isSuspended' => false,
         'strikeCount' => 0
+    ]);
+}
+
+if ($path === 'lms/progress') {
+    jsonResponse([
+        'success' => true,
+        'message' => 'Progress updated',
+        'stats' => ['totalLessons' => 36, 'completedLessons' => 1, 'progressPercentage' => 3]
     ]);
 }
 
@@ -688,31 +1052,73 @@ if ($path === 'lms/resources') {
 }
 
 // ==========================================
-// 5. ADMIN MANAGEMENT APIS
+// 6. ADMIN STUDENT MANAGEMENT & UNLOCKING
 // ==========================================
 
-// GET /api/admin/enrollment-requests OR /api/admin/enrollments
+// GET /api/admin/students
+if ($path === 'admin/students' && $method === 'GET') {
+    $students = [];
+    if ($pdo) {
+        try {
+            $stmt = $pdo->query("SELECT id, name, email, phone, city, access_code, status, security_strikes, created_at FROM users WHERE role = 'student' ORDER BY id DESC");
+            if ($stmt) $students = $stmt->fetchAll();
+        } catch (Exception $e) {}
+    }
+    jsonResponse(['success' => true, 'students' => $students]);
+}
+
+// GET /api/admin/students/{id}
+if (preg_match('#^admin/students/(\d+)$#', $path, $matches) && $method === 'GET') {
+    $id = (int)$matches[1];
+    $student = null;
+    $logs = [];
+    if ($pdo) {
+        try {
+            $sStmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+            $sStmt->execute([$id]);
+            $student = $sStmt->fetch();
+
+            $lStmt = $pdo->prepare("SELECT * FROM security_logs WHERE user_id = ? ORDER BY id DESC");
+            $lStmt->execute([$id]);
+            $logs = $lStmt->fetchAll() ?: [];
+        } catch (Exception $e) {}
+    }
+    jsonResponse(['success' => true, 'student' => $student, 'securityLogs' => $logs]);
+}
+
+// POST /api/admin/students/{id}/reset-strikes (Admin Unlocks Student)
+if (preg_match('#^admin/students/(\d+)/reset-strikes#', $path, $matches) && $method === 'POST') {
+    $id = (int)$matches[1];
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("UPDATE users SET security_strikes = 0, status = 'active', suspended_reason = '' WHERE id = ?");
+            $stmt->execute([$id]);
+        } catch (Exception $e) {}
+    }
+    jsonResponse(['success' => true, 'message' => "Student #{$id} unlocked successfully! Security strikes reset to 0."]);
+}
+
+// PUT /api/admin/students/{id}/status
+if (preg_match('#^admin/students/(\d+)/status#', $path, $matches) && $method === 'PUT') {
+    $id = (int)$matches[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $status = $input['status'] ?? 'active';
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("UPDATE users SET status = ? WHERE id = ?");
+            $stmt->execute([$status, $id]);
+        } catch (Exception $e) {}
+    }
+    jsonResponse(['success' => true, 'message' => "Student status changed to {$status}"]);
+}
+
+// ==========================================
+// 7. ADMIN ENROLLMENTS, ORDERS & SETTINGS
+// ==========================================
+
+// GET /api/admin/enrollment-requests
 if (($path === 'admin/enrollment-requests' || $path === 'admin/enrollments' || $path === 'enrollment-requests') && $method === 'GET') {
     $requests = getStoredRequests($dataDir, $pdo);
-    $statusFilter = $_GET['status'] ?? 'all';
-    $search = strtolower($_GET['search'] ?? '');
-
-    if ($statusFilter !== 'all') {
-        $requests = array_filter($requests, function($r) use ($statusFilter) {
-            return ($r['status'] ?? 'pending') === $statusFilter;
-        });
-    }
-
-    if (!empty($search)) {
-        $requests = array_filter($requests, function($r) use ($search) {
-            return str_contains(strtolower($r['first_name'] ?? ''), $search) ||
-                   str_contains(strtolower($r['last_name'] ?? ''), $search) ||
-                   str_contains(strtolower($r['email'] ?? ''), $search) ||
-                   str_contains(strtolower($r['phone'] ?? ''), $search) ||
-                   str_contains(strtolower($r['enrollment_id'] ?? ''), $search);
-        });
-    }
-
     jsonResponse([
         'success' => true,
         'requests' => array_values($requests),
@@ -720,7 +1126,7 @@ if (($path === 'admin/enrollment-requests' || $path === 'admin/enrollments' || $
     ]);
 }
 
-// PUT / PATCH /api/admin/enrollment-requests/{id}/status
+// PUT /api/admin/enrollment-requests/{id}/status
 if (preg_match('#^admin/enrollment-requests/(\d+)/status#', $path, $matches) ||
     preg_match('#^admin/enrollments/(\d+)/status#', $path, $matches)) {
     
@@ -760,25 +1166,8 @@ if (preg_match('#^admin/enrollment-requests/(\d+)/status#', $path, $matches) ||
         } catch (Exception $e) {}
     }
 
-    $jsonFile = $dataDir . 'enrollment_requests.json';
-    if (file_exists($jsonFile)) {
-        $existing = json_decode(file_get_contents($jsonFile), true) ?: [];
-        foreach ($existing as &$r) {
-            if ((int)($r['id'] ?? 0) === $id) {
-                $r['status'] = $newStatus;
-                $r['admin_note'] = $adminNote;
-                $studentName = trim(($r['first_name'] ?? '') . ' ' . ($r['last_name'] ?? ''));
-                $studentEmail = $r['email'] ?? '';
-                $studentPhone = $r['phone'] ?? '';
-            }
-        }
-        file_put_contents($jsonFile, json_encode($existing, JSON_PRETTY_PRINT));
-    }
-
     $cleanPhone = preg_replace('/[^0-9]/', '', $studentPhone);
-    if (str_starts_with($cleanPhone, '03')) {
-        $cleanPhone = '92' . substr($cleanPhone, 1);
-    }
+    if (str_starts_with($cleanPhone, '03')) $cleanPhone = '92' . substr($cleanPhone, 1);
 
     $whatsappMessage = "Assalam-o-Alaikum $studentName! 🎉\n\nYour enrollment in *Master UAE & KSA Dropshipping Mentorship* has been APPROVED!\n\n🔑 *Student Login Portal:* https://ecomwithsami.com/login\n📧 *Email:* $studentEmail\n🔐 *Access Code / Password:* $accessCode\n\n💬 *VIP Student WhatsApp Group:* https://chat.whatsapp.com/sami-mentorship-mastermind\n\nBest Regards,\n*Sami Ur Rehman*\nEcom With Sami Academy";
     $whatsappDirectUrl = "https://wa.me/{$cleanPhone}?text=" . urlencode($whatsappMessage);
@@ -790,8 +1179,6 @@ if (preg_match('#^admin/enrollment-requests/(\d+)/status#', $path, $matches) ||
         'email' => $studentEmail,
         'phone' => $studentPhone,
         'accessCode' => $accessCode,
-        'emailSent' => true,
-        'emailMessage' => 'Welcome email dispatched with student credentials.',
         'whatsappDirectUrl' => $whatsappDirectUrl,
         'whatsappMessage' => $whatsappMessage
     ]);
@@ -817,17 +1204,6 @@ if ($path === 'admin/overview') {
         'recentEnrollments' => array_slice($requests, 0, 5),
         'recentOrders' => []
     ]);
-}
-
-if ($path === 'admin/students') {
-    $students = [];
-    if ($pdo) {
-        try {
-            $stmt = $pdo->query("SELECT id, name, email, phone, city, access_code, status, security_strikes, created_at FROM users WHERE role = 'student' ORDER BY id DESC");
-            if ($stmt) $students = $stmt->fetchAll();
-        } catch (Exception $e) {}
-    }
-    jsonResponse(['success' => true, 'students' => $students]);
 }
 
 if ($path === 'admin/orders') {
@@ -864,5 +1240,5 @@ if ($path === 'admin/settings') {
     ]);
 }
 
-// Fallback for any other /api/* request
+// Fallback for any unhandled /api/* endpoint
 jsonResponse(['success' => true, 'path' => $path, 'message' => 'API endpoint handled']);
