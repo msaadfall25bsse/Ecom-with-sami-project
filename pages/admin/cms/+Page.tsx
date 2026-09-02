@@ -74,7 +74,6 @@ export default function AdminCmsPage() {
   });
 
   // Dynamic Payment Methods State
-  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [pmLoading, setPmLoading] = useState<boolean>(false);
   const [pmModalOpen, setPmModalOpen] = useState<boolean>(false);
   const [pmEditing, setPmEditing] = useState<any | null>(null);
