@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+Allow: /enrollment
+Allow: /checkout
+Allow: /about
+Allow: /blogs
+Allow: /blogs/*
+Allow: /support
+Allow: /apps
+Allow: /success
+Allow: /login
+
+# Disallow private administration, LMS lectures, and internal APIs
+Disallow: /admin/
+Disallow: /admin/*
+Disallow: /lms/
+Disallow: /lms/*
+Disallow: /api/
+Disallow: /api/*
+
+# Sitemap declaration
+Sitemap: https://ecomwithsami.com/sitemap.xml
