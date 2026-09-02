@@ -138,7 +138,7 @@ export default function EnrollmentPage() {
       data.append('phone', formData.phone);
       data.append('city', formData.city);
       data.append('hearSource', formData.hearSource);
-      data.append('paymentMethod', payTab === 'pakistan' ? formData.paymentMethod : payTab);
+      data.append('paymentMethod', formData.paymentMethod || 'easypaisa');
       data.append('courseId', '1');
       if (selectedFile) {
         data.append('screenshot', selectedFile);
