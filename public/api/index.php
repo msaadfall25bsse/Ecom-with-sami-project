@@ -604,20 +604,45 @@ if ($path === 'lms/curriculum') {
 
 if (preg_match('#^lms/lesson(?:s)?/(\d+)#', $path, $matches)) {
     $lessonId = (int)$matches[1];
+    
+    $lesson = null;
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("
+                SELECT l.*, m.title as module_title, m.module_number
+                FROM lessons l
+                JOIN modules m ON l.module_id = m.id
+                WHERE l.id = ?
+            ");
+            $stmt->execute([$lessonId]);
+            $lesson = $stmt->fetch();
+        } catch (Exception $e) {}
+    }
+
+    $title = $lesson['title'] ?? ('Master UAE & KSA Dropshipping - Comprehensive Lecture ' . $lessonId);
+    $moduleTitle = $lesson['module_title'] ?? 'Mindset & Gulf E-Com Fundamentals';
+    $moduleNumber = $lesson['module_number'] ?? '01';
+    $duration = $lesson['duration'] ?? '18:30';
+    $notes = $lesson['notes'] ?? "Key Takeaways from Lecture:\n1. Choose high-ticket winning products.\n2. Leverage COD couriers with fast payout cycles.\n3. Test creatives with TikTok Ads Spark and ABO campaigns.";
+    $bunnyVideoId = (!empty($lesson['bunny_video_id']) && $lesson['bunny_video_id'] !== 'sample-video') ? $lesson['bunny_video_id'] : '';
+    $vdocipherId = $lesson['vdocipher_id'] ?? '';
+    $videoUrl = $lesson['video_url'] ?? '';
+
     jsonResponse([
         'success' => true,
         'lesson' => [
             'id' => $lessonId,
-            'moduleId' => 1,
-            'moduleNumber' => '01',
-            'moduleTitle' => 'Mindset & Gulf E-Com Fundamentals',
-            'title' => 'Master UAE & KSA Dropshipping - Comprehensive Lecture ' . $lessonId,
-            'description' => 'Detailed practical video training demonstrating step-by-step implementation from Pakistan.',
-            'videoType' => 'direct',
-            'bunnyVideoId' => 'sample-video',
-            'vdocipherId' => '',
-            'duration' => '18:30',
-            'notes' => "Key Takeaways from Lecture:\n1. Choose high-ticket products in AED/SAR.\n2. Leverage COD couriers with fast payout cycles.\n3. Test creatives with TikTok Ads Spark and ABO campaigns.",
+            'moduleId' => $lesson['module_id'] ?? 1,
+            'moduleNumber' => $moduleNumber,
+            'moduleTitle' => $moduleTitle,
+            'title' => $title,
+            'description' => $lesson['description'] ?? 'Detailed practical video training demonstrating step-by-step implementation from Pakistan.',
+            'videoType' => $lesson['video_type'] ?? 'direct',
+            'videoUrl' => $videoUrl,
+            'bunnyVideoId' => $bunnyVideoId,
+            'vdocipherId' => $vdocipherId,
+            'duration' => $duration,
+            'notes' => $notes,
             'isCompleted' => false
         ],
         'navigation' => [

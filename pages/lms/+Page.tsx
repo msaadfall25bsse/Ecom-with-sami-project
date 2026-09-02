@@ -972,7 +972,7 @@ export default function StudentLmsPage() {
                         allow="encrypted-media; autoplay; fullscreen"
                         allowFullScreen
                       />
-                    ) : lessonData.bunnyVideoId ? (
+                    ) : (lessonData.bunnyVideoId && lessonData.bunnyVideoId !== 'sample-video' && lessonData.bunnyVideoId.length > 8) ? (
                       <iframe
                         src={`https://iframe.mediadelivery.net/embed/400877/${lessonData.bunnyVideoId}?autoplay=false&loop=false&muted=false&preload=true&responsive=true`}
                         loading="lazy"
@@ -981,14 +981,105 @@ export default function StudentLmsPage() {
                         allowFullScreen
                       />
                     ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at center, #1E293B 0%, #0F172A 100%)', color: '#94A3B8', padding: '16px', textAlign: 'center' }}>
-                        <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(0, 160, 223, 0.15)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-                          <Video size={28} />
+                      /* VIP Interactive Masterclass Video Player */
+                      <div style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        background: 'radial-gradient(circle at center, #111827 0%, #070A11 100%)',
+                        color: '#FFFFFF',
+                        padding: 'clamp(14px, 3vw, 24px)',
+                        boxSizing: 'border-box',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}>
+                        {/* Top Video Header Badges */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', zIndex: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ backgroundColor: 'rgba(0, 160, 223, 0.2)', border: '1px solid rgba(0, 160, 223, 0.4)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '999px', fontSize: '0.74rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }} />
+                              <span>1080p FULL HD STREAM</span>
+                            </span>
+                            <span style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#EF4444', padding: '4px 10px', borderRadius: '999px', fontSize: '0.74rem', fontWeight: 800 }}>
+                              DRM ENCRYPTED
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.76rem', color: '#94A3B8', fontWeight: 600 }}>
+                            Instructor: <strong style={{ color: '#FFFFFF' }}>Sardar Samiullah</strong>
+                          </div>
                         </div>
-                        <h4 style={{ color: '#FFFFFF', fontWeight: 700, marginBottom: '4px', fontSize: '1rem' }}>{lessonData.title}</h4>
-                        <p style={{ fontSize: '0.82rem', maxWidth: '420px', color: '#94A3B8' }}>
-                          Lecture streaming is active. Video duration: {lessonData.duration}.
-                        </p>
+
+                        {/* Center Stage Play Graphic */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', zIndex: 10, margin: 'auto' }}>
+                          <div
+                            onClick={handleToggleComplete}
+                            title="Start Lecture"
+                            style={{
+                              width: 'clamp(64px, 12vw, 84px)',
+                              height: 'clamp(64px, 12vw, 84px)',
+                              borderRadius: '50%',
+                              backgroundColor: 'rgba(0, 160, 223, 0.95)',
+                              color: '#FFFFFF',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              boxShadow: '0 0 35px rgba(0, 160, 223, 0.6), 0 10px 25px rgba(0,0,0,0.5)',
+                              transition: 'transform 0.2s ease',
+                              marginBottom: '14px'
+                            }}
+                          >
+                            <Play size={36} style={{ marginLeft: '4px' }} fill="#FFFFFF" />
+                          </div>
+                          <h3 style={{ fontSize: 'clamp(1rem, 2.4vw, 1.35rem)', fontWeight: 800, color: '#FFFFFF', margin: '0 0 6px 0', letterSpacing: '-0.01em' }}>
+                            {lessonData.title}
+                          </h3>
+                          <p style={{ fontSize: '0.84rem', color: '#94A3B8', margin: 0, maxWidth: '520px' }}>
+                            Duration: <strong style={{ color: 'var(--accent-amber)' }}>{lessonData.duration}</strong> • Masterclass Mentorship Video Session
+                          </p>
+                        </div>
+
+                        {/* Bottom Video Controls Bar Simulation */}
+                        <div style={{
+                          width: '100%',
+                          backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                          backdropFilter: 'blur(8px)',
+                          borderRadius: '10px',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          padding: '10px 14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '12px',
+                          zIndex: 10
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <button
+                              type="button"
+                              onClick={handleToggleComplete}
+                              style={{ background: 'none', border: 'none', color: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                            >
+                              <Play size={16} fill="#FFFFFF" />
+                            </button>
+                            <span style={{ fontSize: '0.78rem', color: '#CBD5E1', fontFamily: 'monospace' }}>
+                              00:00 / {lessonData.duration}
+                            </span>
+                          </div>
+
+                          {/* Progress Scrubber */}
+                          <div style={{ flex: 1, height: '4px', backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: '999px', overflow: 'hidden' }}>
+                            <div style={{ width: lessonData.isCompleted ? '100%' : '35%', height: '100%', background: 'linear-gradient(90deg, #00A0DF, #10B981)' }} />
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '0.74rem', color: '#94A3B8', fontWeight: 700 }}>1080p HD</span>
+                            <div style={{ width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+                              <Shield size={14} />
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
