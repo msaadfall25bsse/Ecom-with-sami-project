@@ -113,7 +113,6 @@ function saveStoredRequest($dataDir, $pdo, $record) {
         } catch (Exception $e) {}
     }
 
-    // Always backup to JSON file
     $jsonFile = $dataDir . 'enrollment_requests.json';
     $existing = [];
     if (file_exists($jsonFile)) {
@@ -218,6 +217,77 @@ $defaultPaymentMethods = [
         'price_display' => '$15 USD',
         'is_active' => 1,
         'display_order' => 6
+    ]
+];
+
+// Standard 11 Course Modules
+$standardCurriculum = [
+    [
+        'id' => 1,
+        'module_number' => '01',
+        'title' => 'Mindset, E-Com Fundamentals & Gulf Market Overview',
+        'description' => 'Introduction to high-ticket dropshipping in UAE and Saudi Arabia.',
+        'totalLessons' => 3,
+        'completedLessons' => 0,
+        'lessons' => [
+            ['id' => 1, 'title' => 'Welcome to Sami Mentorship & Roadmap (Urdu)', 'duration' => '14:20', 'is_completed' => false, 'is_preview' => true],
+            ['id' => 2, 'title' => 'Why UAE & KSA are the Most Profitable Markets in 2026', 'duration' => '18:45', 'is_completed' => false, 'is_preview' => false],
+            ['id' => 3, 'title' => 'Cash on Delivery (COD) Business Model Explained', 'duration' => '22:10', 'is_completed' => false, 'is_preview' => false]
+        ]
+    ],
+    [
+        'id' => 2,
+        'module_number' => '02',
+        'title' => 'High-Margin Product Hunting for UAE & KSA',
+        'description' => 'Unlocking winning products with zero competition and high profit margins.',
+        'totalLessons' => 3,
+        'completedLessons' => 0,
+        'lessons' => [
+            ['id' => 4, 'title' => 'Winning Product Criteria for Gulf Consumers', 'duration' => '25:30', 'is_completed' => false, 'is_preview' => false],
+            ['id' => 5, 'title' => 'TikTok Creative Center & Ad Library Spy Method', 'duration' => '31:15', 'is_completed' => false, 'is_preview' => false],
+            ['id' => 6, 'title' => 'Competitor Analysis & Reverse Engineering Stores', 'duration' => '19:40', 'is_completed' => false, 'is_preview' => false]
+        ]
+    ],
+    [
+        'id' => 3,
+        'module_number' => '03',
+        'title' => 'Gulf Supplier Sourcing & COD Courier Agreements',
+        'description' => 'Connecting with verified local suppliers and reliable courier partners.',
+        'totalLessons' => 3,
+        'completedLessons' => 0,
+        'lessons' => [
+            ['id' => 7, 'title' => 'Verified UAE & KSA Supplier Contacts', 'duration' => '28:00', 'is_completed' => false, 'is_preview' => false],
+            ['id' => 8, 'title' => 'Courier Account Setup & COD Remittance Terms', 'duration' => '21:50', 'is_completed' => false, 'is_preview' => false],
+            ['id' => 9, 'title' => 'Negotiating Best Product Sourcing Prices', 'duration' => '16:30', 'is_completed' => false, 'is_preview' => false]
+        ]
+    ],
+    [
+        'id' => 4,
+        'module_number' => '04',
+        'title' => 'High-Converting Shopify Store Blueprint & Design',
+        'description' => 'Building a clean, luxury e-commerce store optimized for Arabic & English buyers.',
+        'totalLessons' => 4,
+        'completedLessons' => 0,
+        'lessons' => [
+            ['id' => 10, 'title' => 'Shopify Store Creation & Setup for GCC', 'duration' => '35:20', 'is_completed' => false, 'is_preview' => false],
+            ['id' => 11, 'title' => 'High-Converting Theme Installation & Customization', 'duration' => '42:10', 'is_completed' => false, 'is_preview' => false],
+            ['id' => 12, 'title' => '1-Click Fast COD Checkout App Setup', 'duration' => '24:15', 'is_completed' => false, 'is_preview' => false],
+            ['id' => 13, 'title' => 'Arabic Language Translation & Currency Settings', 'duration' => '18:50', 'is_completed' => false, 'is_preview' => false]
+        ]
+    ],
+    [
+        'id' => 5,
+        'module_number' => '05',
+        'title' => 'TikTok Ads Mastery: Setup, Creative Testing & Scaling',
+        'description' => 'Step-by-step masterclass on launching viral TikTok ads that generate sales.',
+        'totalLessons' => 4,
+        'completedLessons' => 0,
+        'lessons' => [
+            ['id' => 14, 'title' => 'TikTok Agency Account Setup (No Suspension Guarantee)', 'duration' => '29:40', 'is_completed' => false, 'is_preview' => false],
+            ['id' => 15, 'title' => 'TikTok Pixel & Events API Setup on Shopify', 'duration' => '33:10', 'is_completed' => false, 'is_preview' => false],
+            ['id' => 16, 'title' => 'Creating Viral Video Ads in CapCut (Urdu Tutorial)', 'duration' => '45:00', 'is_completed' => false, 'is_preview' => false],
+            ['id' => 17, 'title' => 'Campaign Structure: ABO vs CBO & Scaling Rules', 'duration' => '38:25', 'is_completed' => false, 'is_preview' => false]
+        ]
     ]
 ];
 
@@ -378,14 +448,227 @@ if ($path === 'enrollments' && $method === 'POST') {
 }
 
 // ==========================================
-// 3. ADMIN ENROLLMENT REQUESTS MANAGEMENT
+// 3. AUTHENTICATION & LOGIN
+// ==========================================
+
+if ($path === 'auth/login' && $method === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $email = trim(strtolower($input['email'] ?? ''));
+    $password = trim($input['password'] ?? $input['accessCode'] ?? '');
+
+    // 1. Admin Login
+    if ($email === 'sami@ecomwithsami.com' || $email === 'admin' || $email === 'sami') {
+        $token = base64_encode('1|admin|' . time());
+        jsonResponse([
+            'success' => true,
+            'token' => $token,
+            'redirectUrl' => '/admin',
+            'user' => [
+                'id' => 1,
+                'name' => 'Sami Ur Rehman',
+                'email' => 'sami@ecomwithsami.com',
+                'role' => 'admin'
+            ]
+        ]);
+    }
+
+    // 2. Check Database for Student
+    $foundUser = null;
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            $foundUser = $stmt->fetch();
+        } catch (Exception $e) {}
+    }
+
+    if ($foundUser) {
+        $token = base64_encode($foundUser['id'] . '|student|' . time());
+        jsonResponse([
+            'success' => true,
+            'token' => $token,
+            'redirectUrl' => '/lms',
+            'user' => [
+                'id' => (int)$foundUser['id'],
+                'name' => $foundUser['name'],
+                'email' => $foundUser['email'],
+                'phone' => $foundUser['phone'] ?? '',
+                'city' => $foundUser['city'] ?? '',
+                'role' => 'student',
+                'status' => $foundUser['status'] ?? 'active'
+            ]
+        ]);
+    }
+
+    // 3. Fallback / Default Student Login (Instant access for students)
+    $token = base64_encode('10|student|' . time());
+    jsonResponse([
+        'success' => true,
+        'token' => $token,
+        'redirectUrl' => '/lms',
+        'user' => [
+            'id' => 10,
+            'name' => 'Sami Academy Student',
+            'email' => $email ?: 'student@ecomwithsami.com',
+            'role' => 'student',
+            'status' => 'active'
+        ]
+    ]);
+}
+
+if ($path === 'auth/me') {
+    jsonResponse([
+        'success' => true,
+        'user' => [
+            'id' => 1,
+            'name' => 'Sami Ur Rehman',
+            'email' => 'sami@ecomwithsami.com',
+            'role' => 'admin'
+        ]
+    ]);
+}
+
+// ==========================================
+// 4. STUDENT LMS ENDPOINTS
+// ==========================================
+
+if ($path === 'lms/dashboard') {
+    jsonResponse([
+        'success' => true,
+        'isSuspended' => false,
+        'student' => [
+            'id' => 10,
+            'name' => 'Enrolled Student',
+            'email' => 'student@ecomwithsami.com',
+            'phone' => '03481095933',
+            'city' => 'Pakistan',
+            'status' => 'active',
+            'security_strikes' => 0
+        ],
+        'announcement' => '🔥 Welcome to Sami UAE & KSA Dropshipping Mentorship! Start with Module 01 below.',
+        'stats' => [
+            'totalLessons' => 36,
+            'completedLessons' => 1,
+            'progressPercentage' => 3
+        ],
+        'adminWhatsApp' => '+92 333 0093269',
+        'whatsappGroupUrl' => 'https://chat.whatsapp.com/sami-mentorship-mastermind',
+        'downloads' => [
+            [
+                'id' => 'dl-1',
+                'title' => 'VIP Dropshipping Profit Margin & Cash Flow Calculator',
+                'type' => 'Excel Spreadsheet (.xlsx)',
+                'size' => '1.4 MB',
+                'icon' => 'Calculator',
+                'url' => '/downloads/dropshipping-pl-calculator.xlsx'
+            ],
+            [
+                'id' => 'dl-2',
+                'title' => 'Zero to Hero Facebook & TikTok Ads Blueprint (2026 Edition)',
+                'type' => 'E-Book (PDF)',
+                'size' => '8.2 MB',
+                'icon' => 'BookOpen',
+                'url' => '/downloads/fb-tiktok-ads-guide.pdf'
+            ],
+            [
+                'id' => 'dl-3',
+                'title' => 'Verified UAE & KSA Local Courier & Supplier Directory',
+                'type' => 'Resource Guide (PDF)',
+                'size' => '3.1 MB',
+                'icon' => 'FileText',
+                'url' => '/downloads/uae-ksa-suppliers-directory.pdf'
+            ]
+        ],
+        'mentorshipLinks' => [
+            [
+                'title' => 'Join Official VIP WhatsApp Mentorship Mastermind',
+                'description' => 'Direct daily guidance with Sami and community members',
+                'url' => 'https://chat.whatsapp.com/sami-mentorship-mastermind',
+                'badge' => 'Active Community'
+            ]
+        ]
+    ]);
+}
+
+if ($path === 'lms/curriculum') {
+    jsonResponse([
+        'success' => true,
+        'curriculum' => $standardCurriculum,
+        'stats' => [
+            'totalLessons' => 36,
+            'completedLessons' => 0,
+            'progressPercentage' => 0
+        ]
+    ]);
+}
+
+if (preg_match('#^lms/lesson(?:s)?/(\d+)#', $path, $matches)) {
+    $lessonId = (int)$matches[1];
+    jsonResponse([
+        'success' => true,
+        'lesson' => [
+            'id' => $lessonId,
+            'moduleId' => 1,
+            'moduleNumber' => '01',
+            'moduleTitle' => 'Mindset & Gulf E-Com Fundamentals',
+            'title' => 'Master UAE & KSA Dropshipping - Comprehensive Lecture ' . $lessonId,
+            'description' => 'Detailed practical video training demonstrating step-by-step implementation from Pakistan.',
+            'videoType' => 'direct',
+            'bunnyVideoId' => 'sample-video',
+            'vdocipherId' => '',
+            'duration' => '18:30',
+            'notes' => "Key Takeaways from Lecture:\n1. Choose high-ticket products in AED/SAR.\n2. Leverage COD couriers with fast payout cycles.\n3. Test creatives with TikTok Ads Spark and ABO campaigns.",
+            'isCompleted' => false
+        ],
+        'navigation' => [
+            'prevLesson' => $lessonId > 1 ? ['id' => $lessonId - 1, 'title' => 'Previous Lecture'] : null,
+            'nextLesson' => ['id' => $lessonId + 1, 'title' => 'Next Lecture']
+        ],
+        'watermark' => [
+            'studentName' => 'Sami Academy Student',
+            'studentEmail' => 'student@ecomwithsami.com',
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1',
+            'timestamp' => date('Y-m-d H:i:s'),
+            'displayString' => 'Sami Student | ' . ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1')
+        ]
+    ]);
+}
+
+if ($path === 'lms/progress') {
+    jsonResponse([
+        'success' => true,
+        'message' => 'Progress updated',
+        'stats' => [
+            'totalLessons' => 36,
+            'completedLessons' => 1,
+            'progressPercentage' => 3
+        ]
+    ]);
+}
+
+if ($path === 'lms/security-status') {
+    jsonResponse([
+        'success' => true,
+        'isSuspended' => false,
+        'strikeCount' => 0
+    ]);
+}
+
+if ($path === 'lms/resources') {
+    jsonResponse([
+        'success' => true,
+        'downloads' => [],
+        'whatsappGroupUrl' => 'https://chat.whatsapp.com/sami-mentorship-mastermind'
+    ]);
+}
+
+// ==========================================
+// 5. ADMIN MANAGEMENT APIS
 // ==========================================
 
 // GET /api/admin/enrollment-requests OR /api/admin/enrollments
 if (($path === 'admin/enrollment-requests' || $path === 'admin/enrollments' || $path === 'enrollment-requests') && $method === 'GET') {
     $requests = getStoredRequests($dataDir, $pdo);
-    
-    // Status Filter
     $statusFilter = $_GET['status'] ?? 'all';
     $search = strtolower($_GET['search'] ?? '');
 
@@ -426,7 +709,6 @@ if (preg_match('#^admin/enrollment-requests/(\d+)/status#', $path, $matches) ||
     $studentEmail = '';
     $studentPhone = '';
 
-    // Update in Database
     if ($pdo) {
         try {
             $sel = $pdo->prepare("SELECT * FROM enrollment_requests WHERE id = ?");
@@ -453,7 +735,6 @@ if (preg_match('#^admin/enrollment-requests/(\d+)/status#', $path, $matches) ||
         } catch (Exception $e) {}
     }
 
-    // Update JSON file backup
     $jsonFile = $dataDir . 'enrollment_requests.json';
     if (file_exists($jsonFile)) {
         $existing = json_decode(file_get_contents($jsonFile), true) ?: [];
@@ -490,62 +771,6 @@ if (preg_match('#^admin/enrollment-requests/(\d+)/status#', $path, $matches) ||
         'whatsappMessage' => $whatsappMessage
     ]);
 }
-
-// ==========================================
-// 4. AUTHENTICATION (Login / Me)
-// ==========================================
-
-if ($path === 'auth/login' && $method === 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-    $email = trim(strtolower($input['email'] ?? ''));
-    $password = trim($input['password'] ?? $input['accessCode'] ?? '');
-
-    if ($email === 'sami@ecomwithsami.com' || $email === 'admin' || $email === 'sami') {
-        $token = base64_encode('1|admin|' . time());
-        jsonResponse([
-            'success' => true,
-            'token' => $token,
-            'redirectUrl' => '/admin',
-            'user' => [
-                'id' => 1,
-                'name' => 'Sami Ur Rehman',
-                'email' => 'sami@ecomwithsami.com',
-                'role' => 'admin'
-            ]
-        ]);
-    }
-
-    // Student Login
-    $token = base64_encode('10|student|' . time());
-    jsonResponse([
-        'success' => true,
-        'token' => $token,
-        'redirectUrl' => '/lms',
-        'user' => [
-            'id' => 10,
-            'name' => 'Enrolled Student',
-            'email' => $email,
-            'accessCode' => 'SAMI123456',
-            'role' => 'student'
-        ]
-    ]);
-}
-
-if ($path === 'auth/me') {
-    jsonResponse([
-        'success' => true,
-        'user' => [
-            'id' => 1,
-            'name' => 'Sami Ur Rehman',
-            'email' => 'sami@ecomwithsami.com',
-            'role' => 'admin'
-        ]
-    ]);
-}
-
-// ==========================================
-// 5. ADMIN OVERVIEW, STUDENTS, ORDERS & PIXELS
-// ==========================================
 
 if ($path === 'admin/overview') {
     $requests = getStoredRequests($dataDir, $pdo);
