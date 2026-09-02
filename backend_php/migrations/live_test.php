@@ -2,8 +2,8 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// We need DB_PASS, so let's parse app/core/Database.php or just run the API directly
-require_once 'app/core/Database.php';
+require_once dirname(__DIR__) . '/config/config.php';
+require_once dirname(__DIR__) . '/core/Database.php';
 
 $payload = "1|test@test.com";
 $signature = hash_hmac('sha256', $payload, DB_PASS);

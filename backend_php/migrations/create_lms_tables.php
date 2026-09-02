@@ -1,5 +1,5 @@
 <?php
-require_once 'config/config.php';
+require_once dirname(__DIR__) . '/config/config.php';
 
 // The local dev DB credentials (from config logic we know local has no password usually)
 // Let's use PDO to connect and create tables

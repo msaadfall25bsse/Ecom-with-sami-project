@@ -1,6 +1,6 @@
 <?php
-require_once 'config/config.php';
-require_once 'core/Database.php';
+require_once dirname(__DIR__) . '/config/config.php';
+require_once dirname(__DIR__) . '/core/Database.php';
 
 $conn = new PDO("mysql:host=localhost;dbname=sami_course", "root", "");
 $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
