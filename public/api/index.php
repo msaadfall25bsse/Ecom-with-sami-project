@@ -673,6 +673,14 @@ if ($path === 'enrollments' && $method === 'POST') {
     $paymentMethod = $input['paymentMethod'] ?? $input['payment_method'] ?? 'easypaisa';
     $amount = 3900;
 
+    if (empty($firstName) || empty($email) || empty($phone)) {
+        errorResponse('Please fill in all required fields (First Name, Email, and WhatsApp Phone).', 'VALIDATION_ERROR', 400);
+    }
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        errorResponse('Please provide a valid email address.', 'INVALID_EMAIL', 400);
+    }
+
     $enrollmentId = 'ENR-' . date('Y') . '-' . str_pad((string)rand(100, 9999), 4, '0', STR_PAD_LEFT);
 
     // Save screenshot proof (Supports Base64, direct file upload, and persistent storage)
@@ -1454,6 +1462,7 @@ if (preg_match('#^admin/enrollment-requests/(\d+)/status#', $path, $matches) ||
 
     if ($pdo) {
         try {
+            $pdo->beginTransaction();
             $sel = $pdo->prepare("SELECT * FROM enrollment_requests WHERE id = ?");
             $sel->execute([$id]);
             $enr = $sel->fetch();
@@ -1475,7 +1484,12 @@ if (preg_match('#^admin/enrollment-requests/(\d+)/status#', $path, $matches) ||
                 ");
                 $uStmt->execute([$studentName, $studentEmail, $studentPhone, $enr['city'] ?? '', $hashed, $accessCode]);
             }
-        } catch (Exception $e) {}
+            $pdo->commit();
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+        }
     }
 
     $cleanPhone = preg_replace('/[^0-9]/', '', $studentPhone);
