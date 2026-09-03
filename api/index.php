@@ -150,6 +150,116 @@ if (!is_dir($dataDir)) {
     @mkdir($dataDir, 0777, true);
 }
 
+// Helper to save enrollment request directly to MySQL and fallback JSON
+function saveStoredRequest($dataDir, $pdo, $record) {
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("
+                INSERT INTO enrollment_requests 
+                (enrollment_id, first_name, last_name, email, phone, city, payment_method, amount, screenshot_path, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                ON DUPLICATE KEY UPDATE 
+                first_name = VALUES(first_name),
+                last_name = VALUES(last_name),
+                phone = VALUES(phone),
+                city = VALUES(city),
+                payment_method = VALUES(payment_method),
+                amount = VALUES(amount),
+                screenshot_path = VALUES(screenshot_path),
+                status = VALUES(status)
+            ");
+            $stmt->execute([
+                $record['enrollment_id'],
+                $record['first_name'],
+                $record['last_name'],
+                $record['email'],
+                $record['phone'],
+                $record['city'] ?? '',
+                $record['payment_method'],
+                $record['amount'] ?? 3900,
+                $record['screenshot_path'] ?? '',
+                $record['status'] ?? 'pending'
+            ]);
+            return true;
+        } catch (Exception $e) {
+            @error_log("[DB ERROR saveStoredRequest] " . $e->getMessage());
+        }
+    }
+
+    // Fallback JSON persistence
+    $file = $dataDir . 'enrollment_requests.json';
+    $requests = [];
+    if (file_exists($file)) {
+        $requests = json_decode(file_get_contents($file), true) ?: [];
+    }
+    $record['id'] = count($requests) + 1;
+    $requests[] = $record;
+    @file_put_contents($file, json_encode($requests, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    return true;
+}
+
+// Helper to retrieve all enrollment requests from MySQL with JSON fallback
+function getStoredRequests($dataDir, $pdo) {
+    $requests = [];
+    if ($pdo) {
+        try {
+            $stmt = $pdo->query("SELECT * FROM enrollment_requests ORDER BY id DESC");
+            if ($stmt) {
+                $rows = $stmt->fetchAll();
+                if (!empty($rows)) {
+                    return $rows;
+                }
+            }
+        } catch (Exception $e) {
+            @error_log("[DB ERROR getStoredRequests] " . $e->getMessage());
+        }
+    }
+
+    // Fallback JSON persistence
+    $file = $dataDir . 'enrollment_requests.json';
+    if (file_exists($file)) {
+        $requests = json_decode(file_get_contents($file), true) ?: [];
+    }
+
+    return $requests;
+}
+
+// Helper to retrieve curriculum modules and lessons from MySQL with fallback
+function getCurriculumData($dataDir, $pdo, $defaultModulesSeed) {
+    if ($pdo) {
+        try {
+            $mStmt = $pdo->query("SELECT * FROM modules ORDER BY sort_order ASC, id ASC");
+            if ($mStmt) {
+                $modules = $mStmt->fetchAll();
+                if (!empty($modules)) {
+                    foreach ($modules as &$mod) {
+                        $lStmt = $pdo->prepare("SELECT * FROM lessons WHERE module_id = ? ORDER BY sort_order ASC, id ASC");
+                        $lStmt->execute([$mod['id']]);
+                        $mod['lessons'] = $lStmt->fetchAll() ?: [];
+                    }
+                    return $modules;
+                }
+            }
+        } catch (Exception $e) {
+            @error_log("[DB ERROR getCurriculumData] " . $e->getMessage());
+        }
+    }
+
+    $file = $dataDir . 'curriculum.json';
+    if (file_exists($file)) {
+        $data = json_decode(file_get_contents($file), true);
+        if (!empty($data)) return $data;
+    }
+
+    return $defaultModulesSeed;
+}
+
+// Helper to save curriculum data
+function saveCurriculumData($dataDir, $modules) {
+    $file = $dataDir . 'curriculum.json';
+    @file_put_contents($file, json_encode($modules, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+}
+
 // Standard 11 Course Modules Default Seed
 $defaultModulesSeed = [
     [
