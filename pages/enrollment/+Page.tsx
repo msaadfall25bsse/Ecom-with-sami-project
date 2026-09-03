@@ -215,9 +215,39 @@ export default function EnrollmentPage() {
       } else {
         setFilePreview(null);
       }
+
+      // Fast, lightweight client-side compression to avoid Hostinger 413 Payload Too Large
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setScreenshotBase64(reader.result as string);
+      reader.onload = (event) => {
+        const rawResult = event.target?.result as string;
+        const img = new Image();
+        img.src = rawResult;
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const MAX_DIM = 1200;
+            let w = img.width;
+            let h = img.height;
+            if (w > h && w > MAX_DIM) {
+              h = Math.round((h * MAX_DIM) / w);
+              w = MAX_DIM;
+            } else if (h > MAX_DIM) {
+              w = Math.round((w * MAX_DIM) / h);
+              h = MAX_DIM;
+            }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, w, h);
+            const compressed = canvas.toDataURL('image/jpeg', 0.82);
+            setScreenshotBase64(compressed);
+          } catch {
+            setScreenshotBase64(rawResult);
+          }
+        };
+        img.onerror = () => {
+          setScreenshotBase64(rawResult);
+        };
       };
       reader.readAsDataURL(file);
     }
@@ -237,7 +267,7 @@ export default function EnrollmentPage() {
       return;
     }
 
-    if (!selectedFile) {
+    if (!selectedFile && !screenshotBase64) {
       setErrorMessage('Please attach a screenshot of your payment receipt before submitting.');
       return;
     }
@@ -254,8 +284,9 @@ export default function EnrollmentPage() {
       data.append('hearSource', formData.hearSource);
       data.append('paymentMethod', formData.paymentMethod || 'easypaisa');
       data.append('courseId', '1');
-      data.append('screenshotBase64', screenshotBase64);
-      if (selectedFile) {
+      if (screenshotBase64) {
+        data.append('screenshotBase64', screenshotBase64);
+      } else if (selectedFile) {
         data.append('screenshot', selectedFile);
       }
 
@@ -264,7 +295,13 @@ export default function EnrollmentPage() {
         body: data
       });
 
-      const json = await res.json();
+      const text = await res.text();
+      let json: any = {};
+      try {
+        json = JSON.parse(text);
+      } catch {
+        json = { success: false, message: 'Server responded with an unexpected format. Please retry.' };
+      }
 
       if (json.success) {
         setSuccessData(json);
