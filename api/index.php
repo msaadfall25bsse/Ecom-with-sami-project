@@ -51,64 +51,6 @@ try {
     // Database fallback mode enabled
 }
 
-// Auto-Ensure MySQL Database Schema
-function ensureDatabaseSchema($pdo) {
-    if (!$pdo) return;
-    try {
-        // 1. Enrollment Requests table
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS enrollment_requests (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                enrollment_id VARCHAR(64) UNIQUE,
-                first_name VARCHAR(100),
-                last_name VARCHAR(100),
-                email VARCHAR(191),
-                phone VARCHAR(50),
-                city VARCHAR(100),
-                payment_method VARCHAR(50),
-                amount INT DEFAULT 3900,
-                screenshot_path LONGTEXT,
-                status VARCHAR(30) DEFAULT 'pending',
-                admin_note TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        ");
-        @$pdo->exec("ALTER TABLE enrollment_requests MODIFY screenshot_path LONGTEXT;");
-        @$pdo->exec("ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS admin_note TEXT;");
-
-        // 2. Users table
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(191) NOT NULL,
-                email VARCHAR(191) UNIQUE NOT NULL,
-                phone VARCHAR(50),
-                city VARCHAR(100),
-                password VARCHAR(255) NOT NULL,
-                access_code VARCHAR(50),
-                role VARCHAR(30) DEFAULT 'student',
-                status VARCHAR(30) DEFAULT 'active',
-                security_strikes INT DEFAULT 0,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        ");
-        @$pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS security_strikes INT DEFAULT 0;");
-        @$pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS access_code VARCHAR(50);");
-
-        // Seed default Admin user
-        $adminEmail = 'sami@ecomwithsami.com';
-        $adminCheck = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-        $adminCheck->execute([$adminEmail]);
-        if (!$adminCheck->fetch()) {
-            $hashed = password_hash('SamiMaster@2026', PASSWORD_BCRYPT);
-            $pdo->prepare("INSERT INTO users (name, email, password, role, status) VALUES (?, ?, ?, 'admin', 'active')")
-                ->execute(['Sardar Samiullah', $adminEmail, $hashed]);
-        }
-    } catch (Exception $e) {}
-}
-
-ensureDatabaseSchema($pdo);
-
 // Extract clean request path
 $uri = $_SERVER['REQUEST_URI'] ?? '';
 $uriPath = parse_url($uri, PHP_URL_PATH);
@@ -539,7 +481,7 @@ function ensureDatabaseSchema($pdo, $defaultModulesSeed, $defaultPaymentMethods)
                 city VARCHAR(100) NULL,
                 payment_method VARCHAR(50) NOT NULL,
                 amount DECIMAL(10,2) DEFAULT 3900.00,
-                screenshot_path TEXT NULL,
+                screenshot_path LONGTEXT NULL,
                 status ENUM('pending', 'approved', 'rejected', 'on_hold') DEFAULT 'pending',
                 admin_note TEXT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
