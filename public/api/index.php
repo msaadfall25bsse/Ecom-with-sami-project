@@ -1619,26 +1619,81 @@ if (preg_match('#^admin/enrollment-requests/(\d+)/status#', $path, $matches) ||
     ]);
 }
 
-if ($path === 'admin/overview') {
-    $requests = getStoredRequests($dataDir, $pdo);
-    $pendingCount = count(array_filter($requests, fn($r) => ($r['status'] ?? 'pending') === 'pending'));
+// ==========================================
+// 8. ADMIN PAYMENT METHODS CRUD
+// ==========================================
 
-    jsonResponse([
-        'success' => true,
-        'metrics' => [
-            'totalRevenuePKR' => 4520000,
-            'todaySalesPKR' => 243800,
-            'totalStudents' => 148,
-            'pendingEnrollments' => $pendingCount,
-            'bannedStudents' => 0,
-            'totalOrders' => 152,
-            'shippedOrders' => 148,
-            'conversionRate' => 4.8
-        ],
-        'salesChart' => [],
-        'recentEnrollments' => array_slice($requests, 0, 5),
-        'recentOrders' => []
-    ]);
+// GET /api/admin/payment-methods
+if (($path === 'admin/payment-methods' || $path === 'admin/payments') && $method === 'GET') {
+    $methods = $defaultPaymentMethods;
+    if ($pdo) {
+        try {
+            $stmt = $pdo->query("SELECT * FROM payment_methods ORDER BY display_order ASC, id ASC");
+            if ($stmt) {
+                $rows = $stmt->fetchAll();
+                if (!empty($rows)) $methods = $rows;
+            }
+        } catch (Exception $e) {}
+    }
+    jsonResponse(['success' => true, 'methods' => $methods]);
+}
+
+// POST /api/admin/payment-methods
+if (($path === 'admin/payment-methods' || $path === 'admin/payments') && $method === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $methodKey = trim($input['method_key'] ?? ('method_' . time()));
+    $title = trim($input['title'] ?? 'New Payment Method');
+    $category = $input['category'] ?? 'wallet';
+    $badge = $input['badge'] ?? '';
+    $accountTitle = trim($input['account_title'] ?? 'SARDAR SAMIULLAH');
+    $accountNumber = trim($input['account_number'] ?? '');
+    $ibanOrWallet = trim($input['iban_or_wallet'] ?? '');
+    $checkoutUrl = trim($input['checkout_url'] ?? '');
+    $instructions = trim($input['instructions'] ?? '');
+    $priceDisplay = $input['price_display'] ?? 'PKR 3,900';
+    $isActive = isset($input['is_active']) ? (int)$input['is_active'] : 1;
+    $displayOrder = isset($input['display_order']) ? (int)$input['display_order'] : 1;
+
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("INSERT INTO payment_methods (method_key, title, category, badge, account_title, account_number, iban_or_wallet, checkout_url, instructions, price_display, is_active, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$methodKey, $title, $category, $badge, $accountTitle, $accountNumber, $ibanOrWallet, $checkoutUrl, $instructions, $priceDisplay, $isActive, $displayOrder]);
+        } catch (Exception $e) {}
+    }
+    jsonResponse(['success' => true, 'message' => 'Payment method created successfully']);
+}
+
+// PUT /api/admin/payment-methods/{id}
+if (preg_match('#^admin/payment-methods/(\d+)$#', $path, $matches) && $method === 'PUT') {
+    $id = (int)$matches[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("UPDATE payment_methods SET title = COALESCE(?, title), account_title = COALESCE(?, account_title), account_number = COALESCE(?, account_number), iban_or_wallet = COALESCE(?, iban_or_wallet), instructions = COALESCE(?, instructions), is_active = COALESCE(?, is_active), price_display = COALESCE(?, price_display) WHERE id = ?");
+            $stmt->execute([
+                $input['title'] ?? null,
+                $input['account_title'] ?? null,
+                $input['account_number'] ?? null,
+                $input['iban_or_wallet'] ?? null,
+                $input['instructions'] ?? null,
+                isset($input['is_active']) ? (int)$input['is_active'] : null,
+                $input['price_display'] ?? null,
+                $id
+            ]);
+        } catch (Exception $e) {}
+    }
+    jsonResponse(['success' => true, 'message' => 'Payment method updated successfully']);
+}
+
+// DELETE /api/admin/payment-methods/{id}
+if (preg_match('#^admin/payment-methods/(\d+)$#', $path, $matches) && $method === 'DELETE') {
+    $id = (int)$matches[1];
+    if ($pdo) {
+        try {
+            $pdo->prepare("DELETE FROM payment_methods WHERE id = ?")->execute([$id]);
+        } catch (Exception $e) {}
+    }
+    jsonResponse(['success' => true, 'message' => 'Payment method removed successfully']);
 }
 
 if ($path === 'admin/orders') {
