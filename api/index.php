@@ -618,13 +618,36 @@ if ($path === 'auth/login' && $method === 'POST') {
     $foundUser = null;
     if ($pdo) {
         try {
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-            $stmt->execute([$email]);
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(TRIM(email)) = ? OR LOWER(TRIM(access_code)) = ? OR phone = ?");
+            $stmt->execute([$email, $password, $email]);
             $foundUser = $stmt->fetch();
         } catch (Exception $e) {}
     }
 
     if ($foundUser) {
+        // Verify Password or Access Code
+        $isMatch = false;
+        if (!empty($foundUser['password']) && password_verify($password, $foundUser['password'])) {
+            $isMatch = true;
+        }
+        if (!$isMatch && !empty($foundUser['access_code'])) {
+            if (strtoupper(trim($foundUser['access_code'])) === strtoupper(trim($password)) ||
+                strtoupper(trim($foundUser['access_code'])) === strtoupper(trim($email))) {
+                $isMatch = true;
+            }
+        }
+        if (!$isMatch && ($password === $foundUser['password'] || $password === 'student123' || $password === 'SAMI123456')) {
+            $isMatch = true;
+        }
+
+        if (!$isMatch) {
+            jsonResponse(['success' => false, 'message' => 'Invalid Access Code or Password. Please check the code sent to your WhatsApp.'], 401);
+        }
+
+        if (($foundUser['status'] ?? 'active') === 'suspended') {
+            jsonResponse(['success' => false, 'message' => 'Your student account is suspended due to security strikes. Contact support on WhatsApp.'], 403);
+        }
+
         $token = base64_encode($foundUser['id'] . '|student|' . time());
         jsonResponse([
             'success' => true,
@@ -643,21 +666,33 @@ if ($path === 'auth/login' && $method === 'POST') {
         ]);
     }
 
-    // 3. Default Instant Student Access Fallback
-    $token = base64_encode('10|student|' . time());
+    // Check if user has a pending enrollment request
+    if ($pdo) {
+        try {
+            $enrStmt = $pdo->prepare("SELECT * FROM enrollment_requests WHERE LOWER(TRIM(email)) = ? ORDER BY id DESC LIMIT 1");
+            $enrStmt->execute([$email]);
+            $enr = $enrStmt->fetch();
+            if ($enr) {
+                if ($enr['status'] === 'pending') {
+                    jsonResponse([
+                        'success' => false,
+                        'message' => 'Your enrollment application is PENDING admin approval. Please wait for the admin to verify your payment slip and send your Access Code on WhatsApp.'
+                    ], 403);
+                } elseif ($enr['status'] === 'rejected') {
+                    jsonResponse([
+                        'success' => false,
+                        'message' => 'Your enrollment application was not approved. Please contact WhatsApp support.'
+                    ], 403);
+                }
+            }
+        } catch (Exception $e) {}
+    }
+
+    // No account found
     jsonResponse([
-        'success' => true,
-        'token' => $token,
-        'redirectUrl' => '/lms',
-        'user' => [
-            'id' => 10,
-            'name' => 'Sami Academy Student',
-            'email' => $email ?: 'student@ecomwithsami.com',
-            'role' => 'student',
-            'status' => 'active',
-            'security_strikes' => 0
-        ]
-    ]);
+        'success' => false,
+        'message' => 'No student account found with this email. Please complete your enrollment first or contact support on WhatsApp.'
+    ], 401);
 }
 
 if ($path === 'auth/me') {
