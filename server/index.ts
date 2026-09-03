@@ -40,6 +40,7 @@ if (!fs.existsSync(uploadDir)) {
 
 // Static directories
 app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
+app.use('/api/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
 app.use('/assets', express.static(path.join(process.cwd(), 'assets')));
 
 // Serve built Vike client assets in production or when dist/client exists
