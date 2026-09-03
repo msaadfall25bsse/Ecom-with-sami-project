@@ -111,11 +111,37 @@ if (str_starts_with($path, 'uploads/')) {
     exit;
 }
 
-// Response helper
+// Standardized JSON Response Helpers
 function jsonResponse($data, $code = 200) {
     http_response_code($code);
     echo json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     exit;
+}
+
+function successResponse($message, $data = [], $code = 200) {
+    $response = [
+        'success' => true,
+        'message' => $message
+    ];
+    if (is_array($data)) {
+        $response = array_merge($response, $data);
+    } else {
+        $response['data'] = $data;
+    }
+    jsonResponse($response, $code);
+}
+
+function errorResponse($message, $errorCode = 'SERVER_ERROR', $code = 400, $extra = []) {
+    @error_log("[API ERROR] {$errorCode}: {$message}");
+    $response = [
+        'success' => false,
+        'message' => $message,
+        'error_code' => $errorCode
+    ];
+    if (!empty($extra)) {
+        $response = array_merge($response, $extra);
+    }
+    jsonResponse($response, $code);
 }
 
 // Fallback persistence file directory
