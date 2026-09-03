@@ -154,6 +154,7 @@ export default function EnrollmentPage() {
   // File Upload
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [screenshotBase64, setScreenshotBase64] = useState<string>('');
 
   // Status State
   const [submitting, setSubmitting] = useState(false);
@@ -214,6 +215,11 @@ export default function EnrollmentPage() {
       } else {
         setFilePreview(null);
       }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setScreenshotBase64(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -248,6 +254,7 @@ export default function EnrollmentPage() {
       data.append('hearSource', formData.hearSource);
       data.append('paymentMethod', formData.paymentMethod || 'easypaisa');
       data.append('courseId', '1');
+      data.append('screenshotBase64', screenshotBase64);
       if (selectedFile) {
         data.append('screenshot', selectedFile);
       }

@@ -206,6 +206,58 @@ _Please log in on your browser to watch your 11 modules and 36 HD lectures._`;
         </div>
       </div>
 
+      {/* Pending Application Notification Alert Banner */}
+      {requests.filter(r => (r.status || 'pending') === 'pending').length > 0 && (
+        <div style={{
+          backgroundColor: 'rgba(234, 88, 12, 0.12)',
+          border: '1.5px solid rgba(234, 88, 12, 0.4)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '16px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{
+              width: '12px',
+              height: '12px',
+              borderRadius: '50%',
+              backgroundColor: '#EA580C',
+              boxShadow: '0 0 10px #EA580C',
+              display: 'inline-block'
+            }}></span>
+            <div>
+              <div style={{ fontWeight: '800', color: '#FED7AA', fontSize: '0.98rem' }}>
+                🔔 {requests.filter(r => (r.status || 'pending') === 'pending').length} Pending Student Application(s) Waiting for Verification!
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#CBD5E1' }}>
+                Review payment receipts below and approve to dispatch 6-digit LMS Access Codes via WhatsApp.
+              </div>
+            </div>
+          </div>
+          {statusFilter !== 'pending' && (
+            <button
+              type="button"
+              onClick={() => setStatusFilter('pending')}
+              style={{
+                backgroundColor: '#EA580C',
+                color: '#FFFFFF',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                fontWeight: '700',
+                fontSize: '0.82rem',
+                cursor: 'pointer'
+              }}
+            >
+              Filter Pending Applications
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Controls & Filters */}
       <div style={{
         backgroundColor: '#111827',
@@ -222,11 +274,11 @@ _Please log in on your browser to watch your 11 modules and 36 HD lectures._`;
         {/* Status Filter Tabs */}
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {[
-            { label: 'All Requests', val: 'all' },
-            { label: 'Pending Review', val: 'pending' },
-            { label: 'Approved', val: 'approved' },
-            { label: 'On Hold', val: 'on_hold' },
-            { label: 'Rejected', val: 'rejected' }
+            { label: 'All Requests', val: 'all', count: requests.length },
+            { label: 'Pending Review', val: 'pending', count: requests.filter(r => (r.status || 'pending') === 'pending').length },
+            { label: 'Approved', val: 'approved', count: requests.filter(r => r.status === 'approved').length },
+            { label: 'On Hold', val: 'on_hold', count: requests.filter(r => r.status === 'on_hold').length },
+            { label: 'Rejected', val: 'rejected', count: requests.filter(r => r.status === 'rejected').length }
           ].map(tab => (
             <button
               key={tab.val}
@@ -239,10 +291,18 @@ _Please log in on your browser to watch your 11 modules and 36 HD lectures._`;
                 color: statusFilter === tab.val ? '#FFFFFF' : '#94A3B8',
                 fontWeight: statusFilter === tab.val ? '700' : '500',
                 fontSize: '0.84rem',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
               }}
             >
-              {tab.label}
+              <span>{tab.label}</span>
+              {tab.val === 'pending' && tab.count > 0 && (
+                <span style={{ backgroundColor: '#EA580C', color: '#FFFFFF', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', fontWeight: '800' }}>
+                  {tab.count}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -281,136 +341,151 @@ _Please log in on your browser to watch your 11 modules and 36 HD lectures._`;
               <th style={{ padding: '12px 16px' }}>Contact</th>
               <th style={{ padding: '12px 16px' }}>Payment Method</th>
               <th style={{ padding: '12px 16px' }}>Amount</th>
-              <th style={{ padding: '12px 16px' }}>Receipt</th>
+              <th style={{ padding: '12px 16px' }}>Receipt Slip</th>
               <th style={{ padding: '12px 16px' }}>Status</th>
               <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              [1, 2, 3, 4, 5].map(i => (
-                <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '100px', height: '18px' }} /></td>
-                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '130px', height: '18px' }} /></td>
-                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '140px', height: '18px' }} /></td>
-                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '90px', height: '18px' }} /></td>
-                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '80px', height: '18px' }} /></td>
-                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '60px', height: '18px' }} /></td>
-                  <td style={{ padding: '14px 16px' }}><div className="admin-skeleton" style={{ width: '70px', height: '18px' }} /></td>
-                  <td style={{ padding: '14px 16px', textAlign: 'right' }}><div className="admin-skeleton" style={{ width: '60px', height: '24px', marginLeft: 'auto' }} /></td>
-                </tr>
-              ))
-            ) : requests.length > 0 ? (
-              requests.map(req => (
-                  <tr key={req.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#FFFFFF' }}>
-                    <td style={{ padding: '14px 18px', fontFamily: 'monospace', color: 'var(--primary)', fontWeight: '700' }}>
+              <tr>
+                <td colSpan={8} style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>
+                  Loading enrollment applications...
+                </td>
+              </tr>
+            ) : requests.length === 0 ? (
+              <tr>
+                <td colSpan={8} style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>
+                  No enrollment requests found in this view.
+                </td>
+              </tr>
+            ) : (
+              requests.map(req => {
+                const isPending = (req.status || 'pending') === 'pending';
+                const isApproved = req.status === 'approved';
+                const isRejected = req.status === 'rejected';
+
+                const slipUrl = req.screenshot_path
+                  ? (req.screenshot_path.startsWith('data:') || req.screenshot_path.startsWith('http')
+                      ? req.screenshot_path
+                      : req.screenshot_path.startsWith('/api/')
+                        ? req.screenshot_path
+                        : req.screenshot_path.startsWith('/')
+                          ? `/api${req.screenshot_path}`
+                          : `/api/${req.screenshot_path}`)
+                  : '';
+
+                return (
+                  <tr key={req.id || req.enrollment_id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)', transition: 'background 0.2s' }}>
+                    <td style={{ padding: '14px 16px', fontWeight: '700', color: 'var(--primary)', fontFamily: 'monospace' }}>
                       {req.enrollment_id}
                     </td>
-                    <td style={{ padding: '14px 18px' }}>
-                      <div style={{ fontWeight: '700' }}>{req.first_name} {req.last_name}</div>
-                      <div style={{ fontSize: '0.74rem', color: '#64748B' }}>{req.city} &bull; Lead: {req.hear_source || 'Direct'}</div>
+                    <td style={{ padding: '14px 16px' }}>
+                      <div style={{ fontWeight: '700', color: '#FFFFFF' }}>{req.first_name} {req.last_name}</div>
+                      <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>{req.city || 'Pakistan'}</div>
                     </td>
-                    <td style={{ padding: '14px 18px' }}>
-                      <div>{req.email}</div>
-                      <div style={{ fontSize: '0.76rem', color: '#94A3B8' }}>{req.phone}</div>
+                    <td style={{ padding: '14px 16px' }}>
+                      <div style={{ color: '#E2E8F0', fontSize: '0.82rem' }}>{req.email}</div>
+                      <div style={{ color: '#94A3B8', fontSize: '0.78rem' }}>{req.phone}</div>
                     </td>
-                    <td style={{ padding: '14px 18px', textTransform: 'capitalize', color: '#94A3B8' }}>
-                      {req.payment_method}
-                    </td>
-                    <td style={{ padding: '14px 18px', fontWeight: '700', color: 'var(--accent-green)' }}>
-                      PKR {req.amount}
-                    </td>
-                    <td style={{ padding: '14px 18px' }}>
-                      {req.screenshot_path ? (
-                        <a
-                          href={req.screenshot_path}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', fontSize: '0.8rem', fontWeight: '600' }}
-                        >
-                          <FileImage size={15} /> View Slip
-                        </a>
-                      ) : (
-                        <span style={{ color: '#64748B', fontSize: '0.76rem' }}>No file</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '14px 18px' }}>
-                      <span style={{
-                        padding: '4px 10px',
-                        borderRadius: '999px',
-                        fontSize: '0.74rem',
-                        fontWeight: '800',
-                        textTransform: 'uppercase',
-                        backgroundColor: req.status === 'approved' ? 'rgba(16, 185, 129, 0.15)' : req.status === 'pending' ? 'rgba(245, 158, 11, 0.15)' : req.status === 'on_hold' ? 'rgba(234, 179, 8, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                        color: req.status === 'approved' ? 'var(--accent-green)' : req.status === 'pending' ? 'var(--accent-amber)' : req.status === 'on_hold' ? '#EAB308' : 'var(--accent-red)'
-                      }}>
-                        {req.status}
+                    <td style={{ padding: '14px 16px' }}>
+                      <span style={{ textTransform: 'capitalize', fontWeight: '600', color: '#E2E8F0' }}>
+                        {req.payment_method}
                       </span>
                     </td>
-                    <td style={{ padding: '14px 18px', textAlign: 'right' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                        {req.status === 'approved' && (
-                          <button
-                            type="button"
-                            onClick={() => handleResendAccess(req)}
-                            title="View / Copy Student Access Code"
-                            style={{
-                              padding: '7px 12px',
-                              backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                              border: '1px solid rgba(16, 185, 129, 0.3)',
-                              borderRadius: '6px',
-                              color: 'var(--accent-green)',
-                              fontSize: '0.82rem',
-                              fontWeight: '700',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <KeyRound size={14} />
-                            <span>Access Code</span>
-                          </button>
-                        )}
-
+                    <td style={{ padding: '14px 16px', fontWeight: '700', color: 'var(--accent-green)' }}>
+                      PKR {req.amount || 3900}
+                    </td>
+                    <td style={{ padding: '14px 16px' }}>
+                      {slipUrl ? (
                         <button
                           type="button"
-                          onClick={() => { setSelectedReq(req); setAdminNote(req.admin_note || ''); }}
+                          onClick={() => setSelectedReq(req)}
                           style={{
-                            padding: '7px 14px',
-                            backgroundColor: 'rgba(0, 160, 223, 0.15)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '4px 10px',
+                            backgroundColor: 'rgba(0, 160, 223, 0.12)',
+                            color: 'var(--primary)',
                             border: '1px solid rgba(0, 160, 223, 0.3)',
-                            borderRadius: '6px',
-                            color: '#FFFFFF',
-                            fontSize: '0.82rem',
+                            borderRadius: '4px',
+                            fontSize: '0.76rem',
                             fontWeight: '700',
                             cursor: 'pointer'
                           }}
                         >
-                          Review
+                          <Eye size={13} /> View Slip
                         </button>
+                      ) : (
+                        <span style={{ color: '#64748B', fontSize: '0.76rem' }}>No Slip</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span className={`badge-pill ${
+                        isApproved ? 'badge-green' : isPending ? 'badge-orange' : isRejected ? 'badge-red' : 'badge-cyan'
+                      }`} style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                        {req.status || 'pending'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', gap: '8px' }}>
+                        {isPending ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => { setSelectedReq(req); }}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: 'var(--accent-green)',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                borderRadius: '4px',
+                                fontWeight: '700',
+                                fontSize: '0.78rem',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              <Check size={14} /> Review &amp; Approve
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedReq(req)}
+                            style={{
+                              padding: '6px 10px',
+                              backgroundColor: '#1E293B',
+                              color: '#94A3B8',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: '4px',
+                              fontSize: '0.78rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Details
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={8} style={{ padding: '36px', textAlign: 'center', color: '#64748B' }}>
-                    No enrollment requests found matching your filter.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Review Modal Drawer */}
       {selectedReq && (
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          backdropFilter: 'blur(6px)',
+          backgroundColor: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(8px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -461,7 +536,7 @@ _Please log in on your browser to watch your 11 modules and 36 HD lectures._`;
 
               <div style={{ backgroundColor: '#1E293B', padding: '16px', borderRadius: '8px' }}>
                 <div style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', marginBottom: '4px' }}>Payment &amp; Amount</div>
-                <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--accent-green)' }}>PKR {selectedReq.amount}</div>
+                <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--accent-green)' }}>PKR {selectedReq.amount || 3900}</div>
                 <div style={{ fontSize: '0.8rem', color: '#94A3B8', textTransform: 'capitalize' }}>Method: {selectedReq.payment_method}</div>
               </div>
 
@@ -475,7 +550,7 @@ _Please log in on your browser to watch your 11 modules and 36 HD lectures._`;
                 <div style={{ fontSize: '0.92rem', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span>{selectedReq.phone}</span>
                   <a
-                    href={`https://wa.me/${selectedReq.phone.replace(/[^0-9]/g, '')}`}
+                    href={`https://wa.me/${(selectedReq.phone || '').replace(/[^0-9]/g, '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: '#25D366', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}
@@ -486,8 +561,8 @@ _Please log in on your browser to watch your 11 modules and 36 HD lectures._`;
               </div>
             </div>
 
-            {/* Payment Receipt Image */}
-            {selectedReq.screenshot_path && (
+            {/* Payment Receipt Image with Safe Display */}
+            {selectedReq.screenshot_path ? (
               <div style={{ marginBottom: '24px' }}>
                 <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#E2E8F0', marginBottom: '8px' }}>
                   Payment Screenshot Receipt:
@@ -496,25 +571,40 @@ _Please log in on your browser to watch your 11 modules and 36 HD lectures._`;
                   backgroundColor: '#0B0F19',
                   borderRadius: '8px',
                   border: '1px solid rgba(255,255,255,0.08)',
-                  padding: '12px',
+                  padding: '16px',
                   textAlign: 'center'
                 }}>
                   <img
-                    src={selectedReq.screenshot_path}
-                    alt="Receipt"
-                    style={{ maxHeight: '260px', maxWidth: '100%', borderRadius: '6px', objectFit: 'contain' }}
+                    src={selectedReq.screenshot_path.startsWith('data:') || selectedReq.screenshot_path.startsWith('http')
+                      ? selectedReq.screenshot_path
+                      : selectedReq.screenshot_path.startsWith('/api/')
+                        ? selectedReq.screenshot_path
+                        : `/api/${selectedReq.screenshot_path.replace(/^\//, '')}`}
+                    alt="Payment Slip"
+                    style={{ maxHeight: '360px', maxWidth: '100%', borderRadius: '6px', objectFit: 'contain' }}
+                    onError={(e) => {
+                      // Fallback if direct relative path failed
+                      const target = e.currentTarget;
+                      if (!target.src.includes('/api/uploads/receipts/')) {
+                        target.src = `/api/uploads/receipts/${selectedReq.screenshot_path.split('/').pop()}`;
+                      }
+                    }}
                   />
-                  <div style={{ marginTop: '8px' }}>
+                  <div style={{ marginTop: '12px' }}>
                     <a
                       href={selectedReq.screenshot_path}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: 'var(--primary)', fontSize: '0.8rem', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      style={{ color: 'var(--primary)', fontSize: '0.84rem', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                     >
-                      <ExternalLink size={13} /> Open Full Size Screenshot
+                      <ExternalLink size={14} /> Open Full High-Res Screenshot
                     </a>
                   </div>
                 </div>
+              </div>
+            ) : (
+              <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#1E293B', borderRadius: '8px', textAlign: 'center', color: '#94A3B8' }}>
+                No receipt image attached to this application.
               </div>
             )}
 

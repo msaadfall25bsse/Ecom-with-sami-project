@@ -537,25 +537,39 @@ if ($path === 'public/cms-content' || $path === 'cms-content') {
 // ==========================================
 
 if ($path === 'enrollments' && $method === 'POST') {
-    $firstName = trim($_POST['firstName'] ?? $_POST['first_name'] ?? '');
-    $lastName = trim($_POST['lastName'] ?? $_POST['last_name'] ?? '');
-    $email = trim(strtolower($_POST['email'] ?? ''));
-    $phone = trim($_POST['phone'] ?? '');
-    $city = trim($_POST['city'] ?? '');
-    $paymentMethod = $_POST['paymentMethod'] ?? $_POST['payment_method'] ?? 'easypaisa';
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    $firstName = trim($input['firstName'] ?? $input['first_name'] ?? '');
+    $lastName = trim($input['lastName'] ?? $input['last_name'] ?? '');
+    $email = trim(strtolower($input['email'] ?? ''));
+    $phone = trim($input['phone'] ?? '');
+    $city = trim($input['city'] ?? '');
+    $paymentMethod = $input['paymentMethod'] ?? $input['payment_method'] ?? 'easypaisa';
     $amount = 3900;
 
     $enrollmentId = 'ENR-' . date('Y') . '-' . str_pad((string)rand(100, 9999), 4, '0', STR_PAD_LEFT);
 
-    // Save screenshot proof
+    // Save screenshot proof (Supports Base64, direct file upload, and persistent storage)
     $screenshotPath = '';
+    $base64Input = $input['screenshotBase64'] ?? $input['screenshot'] ?? '';
+    if (!empty($base64Input) && str_starts_with($base64Input, 'data:image')) {
+        $screenshotPath = $base64Input;
+    }
+
     if (isset($_FILES['screenshot']) && $_FILES['screenshot']['error'] === 0) {
+        $tmp = $_FILES['screenshot']['tmp_name'];
+        $cleanExt = pathinfo($_FILES['screenshot']['name'], PATHINFO_EXTENSION) ?: 'jpg';
+        $fileBytes = @file_get_contents($tmp);
+        if ($fileBytes) {
+            $screenshotPath = 'data:image/' . $cleanExt . ';base64,' . base64_encode($fileBytes);
+        }
+
         $uploadDir = __DIR__ . '/uploads/receipts/';
         if (!is_dir($uploadDir)) @mkdir($uploadDir, 0777, true);
-        $cleanExt = pathinfo($_FILES['screenshot']['name'], PATHINFO_EXTENSION);
-        $fileName = 'receipt_' . time() . '_' . rand(1000, 9999) . '.' . ($cleanExt ?: 'jpg');
-        if (move_uploaded_file($_FILES['screenshot']['tmp_name'], $uploadDir . $fileName)) {
-            $screenshotPath = '/api/uploads/receipts/' . $fileName;
+        $fileName = 'receipt_' . time() . '_' . rand(1000, 9999) . '.' . $cleanExt;
+        if (@move_uploaded_file($tmp, $uploadDir . $fileName)) {
+            if (empty($screenshotPath)) {
+                $screenshotPath = '/api/uploads/receipts/' . $fileName;
+            }
         }
     }
 
