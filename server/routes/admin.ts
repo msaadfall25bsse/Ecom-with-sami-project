@@ -162,7 +162,7 @@ const handleUpdateEnrollmentStatus = async (req: AuthRequest, res: any) => {
       // Check if user account already exists for this email
       let user = db.prepare('SELECT id, access_code FROM users WHERE email = ?').get(enr.email) as any;
       if (!user) {
-        const userRes = db.prepare(`
+        db.prepare(`
           INSERT INTO users (name, email, phone, city, password, access_code, role, status)
           VALUES (?, ?, ?, ?, ?, ?, 'student', 'active')
         `).run(
@@ -173,7 +173,8 @@ const handleUpdateEnrollmentStatus = async (req: AuthRequest, res: any) => {
           hashedPassword,
           accessCode
         );
-        createdUserId = userRes.lastInsertRowid;
+        const newlyCreated = db.prepare('SELECT id FROM users WHERE email = ?').get(enr.email) as any;
+        createdUserId = newlyCreated ? newlyCreated.id : 1;
       } else {
         createdUserId = user.id;
         accessCode = user.access_code || accessCode;
