@@ -193,7 +193,8 @@ async function runCompleteLifecycleReport() {
         headers: { Authorization: `Bearer ${studentToken}` }
       });
       const lmsCurData = await lmsCurRes.json();
-      const updatedLecture = lmsCurData.curriculum?.[0]?.lessons?.find((l: any) => l.id === targetLesson.id);
+      const allLmsLessons = lmsCurData.curriculum?.flatMap((m: any) => m.lessons) || [];
+      const updatedLecture = allLmsLessons.find((l: any) => l.id === targetLesson.id);
       const isSynced = updatedLecture?.title?.includes('Updated Live');
       report.push({
         id: 10,

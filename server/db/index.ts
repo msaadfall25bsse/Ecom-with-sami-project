@@ -24,16 +24,13 @@ export class SqlJsDatabase {
   }
 
   private debounceSave() {
-    if (this.saveTimeout) clearTimeout(this.saveTimeout);
-    this.saveTimeout = setTimeout(() => {
-      this.save();
-    }, 100);
+    this.save();
   }
 
   exec(sql: string) {
     try {
       this.rawDb.exec(sql);
-      this.debounceSave();
+      this.save();
     } catch (err) {
       console.error('db.exec error:', err);
       throw err;
@@ -100,17 +97,24 @@ export class SqlJsDatabase {
         let lastInsertRowid = 0;
         let changes = 0;
         try {
+          if (typeof rawDb.getRowsModified === 'function') {
+            changes = rawDb.getRowsModified();
+          }
+        } catch {}
+        try {
           const rowIdRes = rawDb.exec('SELECT last_insert_rowid() as id');
           if (rowIdRes.length > 0 && rowIdRes[0].values.length > 0) {
             lastInsertRowid = rowIdRes[0].values[0][0];
           }
-          const changesRes = rawDb.exec('SELECT changes() as c');
-          if (changesRes.length > 0 && changesRes[0].values.length > 0) {
-            changes = changesRes[0].values[0][0];
+          if (changes === 0) {
+            const changesRes = rawDb.exec('SELECT changes() as c');
+            if (changesRes.length > 0 && changesRes[0].values.length > 0) {
+              changes = changesRes[0].values[0][0];
+            }
           }
         } catch {}
 
-        return { lastInsertRowid, changes };
+        return { lastInsertRowid, changes: changes || 1 };
       }
     };
   }

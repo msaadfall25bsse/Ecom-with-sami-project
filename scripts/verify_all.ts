@@ -1,8 +1,8 @@
 async function verifySystem() {
   console.log('🚀 Starting Phase 9 Complete Platform Quality Assurance...\n');
 
-  const frontendUrl = 'http://localhost:3001';
-  const backendUrl = 'http://localhost:5000';
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
 
   let passCount = 0;
   let failCount = 0;

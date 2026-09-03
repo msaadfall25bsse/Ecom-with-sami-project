@@ -2,24 +2,28 @@
     RewriteEngine On
     RewriteBase /
 
-    # 1. Forward Authorization Header to PHP on Hostinger FastCGI / PHP-FPM
+    # 1. Forward Authorization Header for Node.js / API Requests
     SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # 2. Direct all /api/* requests to PHP API Gateway
-    RewriteRule ^api/(.*)$ api/index.php [QSA,L]
-    RewriteRule ^api$ api/index.php [QSA,L]
+    # 2. Reverse Proxy /api/* requests to Node.js & Express Backend Server (Port 5000)
+    <IfModule mod_proxy.c>
+        RewriteRule ^api/(.*)$ http://127.0.0.1:5000/api/$1 [P,L]
+        RewriteRule ^api$ http://127.0.0.1:5000/api [P,L]
+        RewriteRule ^uploads/(.*)$ http://127.0.0.1:5000/uploads/$1 [P,L]
+        RewriteRule ^stream/(.*)$ http://127.0.0.1:5000/stream/$1 [P,L]
+    </IfModule>
 
-    # 3. Allow existing files and directories to load directly (CSS, JS, Images, HTML)
+    # 3. Allow existing static files and directories to load directly (CSS, JS, Images, Fonts)
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # 4. Support subfolder index.html (e.g., /enrollment -> /enrollment/index.html, /admin -> /admin/index.html, /lms -> /lms/index.html)
+    # 4. Support subfolder index.html for client-side routing
     RewriteCond %{REQUEST_FILENAME}/index.html -f
     RewriteRule ^(.*)$ $1/index.html [L]
 
-    # 5. Fallback to main index.html for client-side routing
+    # 5. Fallback to main index.html for single page client navigation
     RewriteRule ^ index.html [L]
 </IfModule>
 
