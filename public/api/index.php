@@ -51,6 +51,64 @@ try {
     // Database fallback mode enabled
 }
 
+// Auto-Ensure MySQL Database Schema
+function ensureDatabaseSchema($pdo) {
+    if (!$pdo) return;
+    try {
+        // 1. Enrollment Requests table
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS enrollment_requests (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                enrollment_id VARCHAR(64) UNIQUE,
+                first_name VARCHAR(100),
+                last_name VARCHAR(100),
+                email VARCHAR(191),
+                phone VARCHAR(50),
+                city VARCHAR(100),
+                payment_method VARCHAR(50),
+                amount INT DEFAULT 3900,
+                screenshot_path LONGTEXT,
+                status VARCHAR(30) DEFAULT 'pending',
+                admin_note TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+        @$pdo->exec("ALTER TABLE enrollment_requests MODIFY screenshot_path LONGTEXT;");
+        @$pdo->exec("ALTER TABLE enrollment_requests ADD COLUMN IF NOT EXISTS admin_note TEXT;");
+
+        // 2. Users table
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(191) NOT NULL,
+                email VARCHAR(191) UNIQUE NOT NULL,
+                phone VARCHAR(50),
+                city VARCHAR(100),
+                password VARCHAR(255) NOT NULL,
+                access_code VARCHAR(50),
+                role VARCHAR(30) DEFAULT 'student',
+                status VARCHAR(30) DEFAULT 'active',
+                security_strikes INT DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+        @$pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS security_strikes INT DEFAULT 0;");
+        @$pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS access_code VARCHAR(50);");
+
+        // Seed default Admin user
+        $adminEmail = 'sami@ecomwithsami.com';
+        $adminCheck = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+        $adminCheck->execute([$adminEmail]);
+        if (!$adminCheck->fetch()) {
+            $hashed = password_hash('SamiMaster@2026', PASSWORD_BCRYPT);
+            $pdo->prepare("INSERT INTO users (name, email, password, role, status) VALUES (?, ?, ?, 'admin', 'active')")
+                ->execute(['Sardar Samiullah', $adminEmail, $hashed]);
+        }
+    } catch (Exception $e) {}
+}
+
+ensureDatabaseSchema($pdo);
+
 // Extract clean request path
 $uri = $_SERVER['REQUEST_URI'] ?? '';
 $uriPath = parse_url($uri, PHP_URL_PATH);
@@ -233,16 +291,45 @@ function getStoredRequests($dataDir, $pdo) {
         try {
             $stmt = $pdo->query("SELECT * FROM enrollment_requests ORDER BY id DESC");
             if ($stmt) {
-                $requests = $stmt->fetchAll();
+                $requests = $stmt->fetchAll() ?: [];
             }
         } catch (Exception $e) {}
     }
     
     $jsonFile = $dataDir . 'enrollment_requests.json';
-    if (empty($requests) && file_exists($jsonFile)) {
+    if (file_exists($jsonFile)) {
         $data = json_decode(file_get_contents($jsonFile), true);
-        if (is_array($data)) $requests = $data;
+        if (is_array($data)) {
+            $dbIds = array_column($requests, 'enrollment_id');
+            foreach ($data as $d) {
+                if (!in_array($d['enrollment_id'] ?? '', $dbIds)) {
+                    $requests[] = $d;
+                }
+            }
+        }
     }
+
+    // Seed test request if completely empty
+    if (empty($requests)) {
+        $seedRequest = [
+            'id' => 1,
+            'enrollment_id' => 'ENR-2026-1001',
+            'first_name' => 'Muhammad',
+            'last_name' => 'Saad',
+            'email' => 'msaadbsse296@gmail.com',
+            'phone' => '03158960026',
+            'city' => 'Abbottabad',
+            'payment_method' => 'easypaisa',
+            'amount' => 3900,
+            'screenshot_path' => '/api/uploads/receipts/receipt_sample.jpg',
+            'status' => 'pending',
+            'admin_note' => '',
+            'created_at' => date('Y-m-d H:i:s')
+        ];
+        saveStoredRequest($dataDir, $pdo, $seedRequest);
+        $requests = [$seedRequest];
+    }
+
     return $requests;
 }
 
@@ -253,6 +340,14 @@ function saveStoredRequest($dataDir, $pdo, $record) {
             $stmt = $pdo->prepare("
                 INSERT INTO enrollment_requests (enrollment_id, first_name, last_name, email, phone, city, payment_method, amount, screenshot_path, status, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                ON DUPLICATE KEY UPDATE 
+                    first_name = VALUES(first_name),
+                    last_name = VALUES(last_name),
+                    phone = VALUES(phone),
+                    payment_method = VALUES(payment_method),
+                    amount = VALUES(amount),
+                    screenshot_path = VALUES(screenshot_path),
+                    status = VALUES(status)
             ");
             $stmt->execute([
                 $record['enrollment_id'],
@@ -266,7 +361,7 @@ function saveStoredRequest($dataDir, $pdo, $record) {
                 $record['screenshot_path'],
                 $record['status']
             ]);
-            $record['id'] = (int)$pdo->lastInsertId();
+            $record['id'] = (int)$pdo->lastInsertId() ?: ($record['id'] ?? 1);
         } catch (Exception $e) {}
     }
 
@@ -278,8 +373,19 @@ function saveStoredRequest($dataDir, $pdo, $record) {
     if (empty($record['id'])) {
         $record['id'] = count($existing) + 1;
     }
-    array_unshift($existing, $record);
-    file_put_contents($jsonFile, json_encode($existing, JSON_PRETTY_PRINT));
+    // Check if duplicate enrollment_id in json
+    $found = false;
+    foreach ($existing as &$item) {
+        if (($item['enrollment_id'] ?? '') === $record['enrollment_id']) {
+            $item = array_merge($item, $record);
+            $found = true;
+            break;
+        }
+    }
+    if (!$found) {
+        array_unshift($existing, $record);
+    }
+    @file_put_contents($jsonFile, json_encode($existing, JSON_PRETTY_PRINT));
     return $record;
 }
 

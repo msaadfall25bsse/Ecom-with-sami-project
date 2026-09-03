@@ -58,15 +58,12 @@ export default function EnrollmentRequestsPage() {
         }
       })
       .catch(() => {});
-  }, [statusFilter, searchTerm]);
+  }, []);
 
   const fetchRequests = async () => {
     try {
       const token = localStorage.getItem('sami_admin_token');
-      let url = `/api/admin/enrollment-requests?status=${statusFilter}`;
-      if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
-
-      const res = await fetch(url, {
+      const res = await fetch('/api/admin/enrollment-requests?status=all', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -79,6 +76,20 @@ export default function EnrollmentRequestsPage() {
       setLoading(false);
     }
   };
+
+  const displayedRequests = requests.filter(req => {
+    const matchesStatus = statusFilter === 'all' || (req.status || 'pending') === statusFilter;
+    if (!matchesStatus) return false;
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    const fullName = `${req.first_name || ''} ${req.last_name || ''}`.toLowerCase();
+    return (
+      fullName.includes(term) ||
+      (req.email || '').toLowerCase().includes(term) ||
+      (req.phone || '').includes(term) ||
+      (req.enrollment_id || '').toLowerCase().includes(term)
+    );
+  });
 
   const handleStatusUpdate = async (id: number, newStatus: string) => {
     setActionLoading(true);
@@ -353,14 +364,14 @@ _Please log in on your browser to watch your 11 modules and 36 HD lectures._`;
                   Loading enrollment applications...
                 </td>
               </tr>
-            ) : requests.length === 0 ? (
+            ) : displayedRequests.length === 0 ? (
               <tr>
                 <td colSpan={8} style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>
-                  No enrollment requests found in this view.
+                  No enrollment requests found matching your filter.
                 </td>
               </tr>
             ) : (
-              requests.map(req => {
+              displayedRequests.map(req => {
                 const isPending = (req.status || 'pending') === 'pending';
                 const isApproved = req.status === 'approved';
                 const isRejected = req.status === 'rejected';
