@@ -845,6 +845,59 @@ if ($path === 'auth/login' && $method === 'POST') {
 }
 
 if ($path === 'auth/me') {
+    $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    if (preg_match('/Bearer\s+(.*)$/i', $auth, $matches)) {
+        $decoded = base64_decode($matches[1]);
+        $parts = explode('|', $decoded);
+        if (count($parts) >= 2) {
+            $userId = (int)$parts[0];
+            $role = $parts[1];
+
+            if ($role === 'admin') {
+                jsonResponse([
+                    'success' => true,
+                    'user' => [
+                        'id' => 1,
+                        'name' => 'Sami Ur Rehman',
+                        'email' => 'sami@ecomwithsami.com',
+                        'role' => 'admin'
+                    ]
+                ]);
+            }
+
+            if ($pdo && $userId) {
+                try {
+                    $stmt = $pdo->prepare("SELECT id, name, email, phone, city, role, status, security_strikes FROM users WHERE id = ?");
+                    $stmt->execute([$userId]);
+                    $user = $stmt->fetch();
+                    if ($user) {
+                        if ($user['status'] === 'suspended' || (int)($user['security_strikes'] ?? 0) >= 3) {
+                            jsonResponse([
+                                'success' => false,
+                                'isSuspended' => true,
+                                'message' => 'Account suspended due to security strikes.'
+                            ], 403);
+                        }
+                        jsonResponse([
+                            'success' => true,
+                            'user' => [
+                                'id' => (int)$user['id'],
+                                'name' => $user['name'],
+                                'email' => $user['email'],
+                                'phone' => $user['phone'] ?? '',
+                                'city' => $user['city'] ?? '',
+                                'role' => $user['role'] ?? 'student',
+                                'status' => $user['status'] ?? 'active',
+                                'security_strikes' => (int)($user['security_strikes'] ?? 0)
+                            ]
+                        ]);
+                    }
+                } catch (Exception $e) {}
+            }
+        }
+    }
+
+    // Default fallback for authorized admin session
     jsonResponse([
         'success' => true,
         'user' => [
